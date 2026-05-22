@@ -64,9 +64,9 @@ body {
 .ans-prog { text-align: center; margin-top: 18px; font-size: 1.1rem; opacity: 0.6; }
 
 /* ── Leaderboard ── */
-#s-leaderboard { }
+#s-leaderboard { text-align: center; }
 .lb-title { font-size: 3.2rem; font-weight: 800; text-align: center; margin-bottom: 28px; }
-.lb-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lb-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 900px; margin: 0 auto; }
 .lb-row {
   display: flex; align-items: center; gap: 16px;
   padding: 18px 22px; border-radius: 14px;
@@ -84,6 +84,7 @@ body {
 /* ── Game Over ── */
 #s-gameover { text-align: center; }
 .go-title { font-size: 4.5rem; font-weight: 800; margin-bottom: 36px; }
+#s-gameover .lb-grid { max-width: 900px; margin: 0 auto; }
 </style>
 </head>
 <body>
