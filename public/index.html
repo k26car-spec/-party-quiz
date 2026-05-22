@@ -172,6 +172,10 @@ input[type="text"]:focus { border-color: #e056fd; }
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
+socket.on('connect', () => {
+  const saved = localStorage.getItem('pq-name');
+  if (saved) socket.emit('player_join', { name: saved });
+});
 let myName = '';
 let myScore = 0;
 let myLastPts = 0;
@@ -216,10 +220,44 @@ function renderLB(lb, listId) {
   ).join('');
 }
 
-socket.on('join_ok', ({ name }) => {
+socket.on('join_ok', ({ name, score }) => {
   myName = name;
+  if (score) myScore = score;
+  localStorage.setItem('pq-name', name);
   document.getElementById('waiting-name').textContent = `你好，${name}！`;
   show('s-waiting');
+});
+socket.on('player_sync', ({ phase, question }) => {
+  if (phase === 'question' && question) {
+    revealTimers.forEach(t => clearTimeout(t));
+    revealTimers = [];
+    currentAnswer = null;
+    show('s-question');
+    document.getElementById('q-progress').textContent = `${question.index + 1} / ${question.total}`;
+    document.getElementById('q-text').textContent = question.text;
+    document.getElementById('answered-msg').style.display = 'none';
+    document.getElementById('ans-progress').textContent = '';
+    ['A','B','C','D'].forEach((lbl, i) => {
+      const b = document.getElementById(`opt-${i}`);
+      b.textContent = `${lbl}. ${question.options[i]}`;
+      b.classList.remove('disabled','correct','wrong');
+    });
+    if (timerInterval) clearInterval(timerInterval);
+    const end = question.startTime + question.duration * 1000;
+    const bar = document.getElementById('timer-bar');
+    function tick() {
+      const rem = Math.max(0, (end - Date.now()) / 1000);
+      bar.style.width = (rem / question.duration * 100) + '%';
+      document.getElementById('q-time').textContent = Math.ceil(rem);
+      if (rem <= 0) clearInterval(timerInterval);
+    }
+    tick(); timerInterval = setInterval(tick, 250);
+  } else if (phase === 'reveal' || phase === 'starting') {
+    document.getElementById('lb-status').textContent = '等待下一題...';
+    show('s-leaderboard');
+  } else if (phase === 'finished') {
+    show('s-gameover');
+  }
 });
 socket.on('join_error', msg => {
   const el = document.getElementById('join-err');

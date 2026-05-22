@@ -76,15 +76,42 @@ function revealAnswer() {
 
 io.on('connection', (socket) => {
   socket.on('player_join', ({ name }) => {
-    if (state.phase !== 'lobby') {
-      socket.emit('join_error', '遊戲已開始，無法加入');
-      return;
-    }
     const n = (name || '').trim().slice(0, 20);
     if (!n) return;
-    state.players[socket.id] = { name: n, score: 0, answer: null };
-    socket.emit('join_ok', { name: n });
+
+    // 相同名字 → 重連，恢復分數
+    const existing = Object.entries(state.players).find(([, p]) => p.name === n);
+    if (existing) {
+      const [oldSid, playerData] = existing;
+      delete state.players[oldSid];
+      state.players[socket.id] = { ...playerData, answer: null };
+    } else if (state.phase !== 'lobby') {
+      socket.emit('join_error', '遊戲已開始，無法加入');
+      return;
+    } else {
+      state.players[socket.id] = { name: n, score: 0, answer: null };
+    }
+
+    socket.emit('join_ok', { name: n, score: state.players[socket.id].score });
     broadcastPlayerCount();
+
+    // 告訴重連的玩家目前在哪個畫面
+    if (state.phase === 'question') {
+      const q = state.questions[state.currentQ];
+      socket.emit('player_sync', {
+        phase: 'question',
+        question: {
+          index: state.currentQ,
+          total: state.questions.length,
+          text: q.text,
+          options: q.options,
+          duration: state.duration,
+          startTime: state.startTime,
+        }
+      });
+    } else if (state.phase !== 'lobby') {
+      socket.emit('player_sync', { phase: state.phase });
+    }
   });
 
   socket.on('submit_answer', ({ answerIndex }) => {
