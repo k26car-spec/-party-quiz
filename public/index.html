@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>派對問答</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+  min-height: 100vh; min-height: 100dvh;
+  color: #fff;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.screen { display: none; width: 100%; max-width: 480px; }
+.screen.active { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+h1 { font-size: 2rem; font-weight: 800; text-align: center; }
+h2 { font-size: 1.3rem; font-weight: 700; text-align: center; }
+
+.emoji-lg { font-size: 3.5rem; }
+
+input[type="text"] {
+  width: 100%; padding: 14px 18px;
+  border-radius: 14px; border: 2px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.1); color: #fff;
+  font-size: 1.1rem; text-align: center; outline: none;
+}
+input[type="text"]::placeholder { color: rgba(255,255,255,0.4); }
+input[type="text"]:focus { border-color: #e056fd; }
+
+.btn {
+  width: 100%; padding: 15px;
+  border-radius: 14px; border: none;
+  font-size: 1.1rem; font-weight: 700; cursor: pointer;
+  transition: transform 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: linear-gradient(135deg, #e056fd, #7c6ff7); color: #fff; }
+
+.chip {
+  background: rgba(255,255,255,0.12);
+  border-radius: 50px; padding: 7px 18px;
+  font-size: 0.95rem;
+}
+
+.bounce { animation: bounce 1.5s ease-in-out infinite; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+/* Timer bar */
+.timer-wrap { width: 100%; height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; overflow: hidden; }
+.timer-bar { height: 100%; background: linear-gradient(90deg, #6ab04c, #f9ca24, #eb4d4b); border-radius: 5px; transition: width 0.25s linear; }
+
+/* Question */
+.q-meta { display: flex; justify-content: space-between; width: 100%; font-size: 0.9rem; opacity: 0.65; }
+.q-text {
+  width: 100%; padding: 18px 20px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 14px;
+  font-size: 1.15rem; font-weight: 600; line-height: 1.5;
+  text-align: center;
+}
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.opt-btn {
+  padding: 18px 10px; border-radius: 12px; border: none;
+  font-size: 0.95rem; font-weight: 700; color: #fff;
+  cursor: pointer; min-height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; line-height: 1.3;
+  transition: transform 0.1s, filter 0.2s;
+}
+.opt-btn:active:not(.disabled) { transform: scale(0.95); }
+.opt-btn.disabled { cursor: default; filter: brightness(0.5); }
+.opt-btn.correct { filter: brightness(1.1) !important; box-shadow: 0 0 18px rgba(255,255,255,0.35); }
+.opt-btn.wrong { filter: brightness(0.35) !important; }
+.opt-a { background: #e84393; }
+.opt-b { background: #1289A7; }
+.opt-c { background: #f0b429; color: #222; }
+.opt-d { background: #6ab04c; }
+
+.sub-text { font-size: 0.9rem; opacity: 0.65; text-align: center; }
+
+/* Result */
+.points-big { font-size: 2.2rem; font-weight: 800; color: #f9ca24; }
+
+/* Leaderboard */
+.lb-list { width: 100%; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.lb-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.08); border-radius: 12px;
+  font-size: 0.95rem;
+}
+.lb-item.me { background: rgba(224,86,253,0.25); border: 1px solid rgba(224,86,253,0.5); }
+.lb-rank { font-size: 1.2rem; font-weight: 800; min-width: 28px; text-align: center; }
+.lb-name { flex: 1; font-weight: 600; }
+.lb-score { font-weight: 700; color: #f9ca24; }
+
+.err { color: #eb4d4b; font-size: 0.9rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- 大廳：輸入暱稱 -->
+<div class="screen active" id="s-lobby">
+  <div class="emoji-lg">🎉</div>
+  <h1>派對問答</h1>
+  <p style="opacity:0.65;text-align:center">輸入暱稱，加入遊戲</p>
+  <input type="text" id="nickname-input" placeholder="你的暱稱（最多 20 字）" maxlength="20" autocomplete="off">
+  <button class="btn btn-primary" onclick="joinGame()">加入遊戲</button>
+  <div class="err" id="join-err" style="display:none"></div>
+</div>
+
+<!-- 等待 -->
+<div class="screen" id="s-waiting">
+  <div class="emoji-lg bounce">⏳</div>
+  <h2 id="waiting-name">等待中...</h2>
+  <p style="opacity:0.65;text-align:center">等待主持人開始遊戲</p>
+  <div class="chip" id="waiting-count">0 人已加入</div>
+</div>
+
+<!-- 倒數 -->
+<div class="screen" id="s-countdown">
+  <h2>遊戲即將開始！</h2>
+  <div style="font-size:7rem;font-weight:800;line-height:1" id="countdown-num">3</div>
+</div>
+
+<!-- 作答 -->
+<div class="screen" id="s-question">
+  <div class="q-meta">
+    <span id="q-progress">1/10</span>
+    <span id="q-time">20</span>
+  </div>
+  <div class="timer-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+  <div class="q-text" id="q-text"></div>
+  <div class="options-grid">
+    <button class="opt-btn opt-a" id="opt-0" onclick="submitAnswer(0)"></button>
+    <button class="opt-btn opt-b" id="opt-1" onclick="submitAnswer(1)"></button>
+    <button class="opt-btn opt-c" id="opt-2" onclick="submitAnswer(2)"></button>
+    <button class="opt-btn opt-d" id="opt-3" onclick="submitAnswer(3)"></button>
+  </div>
+  <div class="sub-text" id="answered-msg" style="display:none">✅ 已提交，等待其他人...</div>
+  <div class="sub-text" id="ans-progress"></div>
+</div>
+
+<!-- 結果 -->
+<div class="screen" id="s-result">
+  <div class="emoji-lg" id="result-emoji"></div>
+  <h2 id="result-label"></h2>
+  <div class="points-big" id="result-pts"></div>
+  <div class="sub-text" id="result-total"></div>
+</div>
+
+<!-- 排行榜（每題後） -->
+<div class="screen" id="s-leaderboard">
+  <h2>🏆 目前排行</h2>
+  <ul class="lb-list" id="lb-list"></ul>
+  <div class="sub-text" id="lb-status">等待下一題...</div>
+</div>
+
+<!-- 結束 -->
+<div class="screen" id="s-gameover">
+  <div class="emoji-lg">🏆</div>
+  <h1>遊戲結束！</h1>
+  <ul class="lb-list" id="final-lb-list"></ul>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let myName = '';
+let myScore = 0;
+let myLastPts = 0;
+let currentAnswer = null;
+let timerInterval = null;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function joinGame() {
+  const name = document.getElementById('nickname-input').value.trim();
+  if (!name) return;
+  socket.emit('player_join', { name });
+}
+document.getElementById('nickname-input').addEventListener('keypress', e => {
+  if (e.key === 'Enter') joinGame();
+});
+
+function submitAnswer(idx) {
+  if (currentAnswer !== null) return;
+  currentAnswer = idx;
+  socket.emit('submit_answer', { answerIndex: idx });
+  document.querySelectorAll('.opt-btn').forEach((b, i) => {
+    if (i !== idx) b.classList.add('disabled');
+  });
+  document.getElementById('answered-msg').style.display = 'block';
+}
+
+function renderLB(lb, listId) {
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById(listId).innerHTML = lb.map((item, i) =>
+    `<li class="lb-item${item.name === myName ? ' me' : ''}">
+      <span class="lb-rank">${i < 3 ? medals[i] : item.rank}</span>
+      <span class="lb-name">${item.name}</span>
+      <span class="lb-score">${item.score.toLocaleString()}</span>
+    </li>`
+  ).join('');
+}
+
+socket.on('join_ok', ({ name }) => {
+  myName = name;
+  document.getElementById('waiting-name').textContent = `你好，${name}！`;
+  show('s-waiting');
+});
+socket.on('join_error', msg => {
+  const el = document.getElementById('join-err');
+  el.textContent = msg; el.style.display = 'block';
+});
+socket.on('player_count', n => {
+  document.getElementById('waiting-count').textContent = `${n} 人已加入`;
+});
+
+socket.on('game_starting', ({ countdown }) => {
+  show('s-countdown');
+  let n = countdown;
+  document.getElementById('countdown-num').textContent = n;
+  const t = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(t); return; }
+    document.getElementById('countdown-num').textContent = n;
+  }, 1000);
+});
+
+socket.on('question_start', data => {
+  currentAnswer = null;
+  show('s-question');
+  document.getElementById('q-progress').textContent = `${data.index + 1} / ${data.total}`;
+  document.getElementById('q-text').textContent = data.text;
+  document.getElementById('answered-msg').style.display = 'none';
+  document.getElementById('ans-progress').textContent = '';
+
+  const labels = ['A', 'B', 'C', 'D'];
+  data.options.forEach((opt, i) => {
+    const b = document.getElementById(`opt-${i}`);
+    b.textContent = `${labels[i]}. ${opt}`;
+    b.classList.remove('disabled', 'correct', 'wrong');
+  });
+
+  if (timerInterval) clearInterval(timerInterval);
+  const end = data.startTime + data.duration * 1000;
+  const bar = document.getElementById('timer-bar');
+  function tick() {
+    const rem = Math.max(0, (end - Date.now()) / 1000);
+    bar.style.width = (rem / data.duration * 100) + '%';
+    document.getElementById('q-time').textContent = Math.ceil(rem);
+    if (rem <= 0) clearInterval(timerInterval);
+  }
+  tick();
+  timerInterval = setInterval(tick, 250);
+});
+
+socket.on('answer_result', ({ isCorrect, points, score }) => {
+  myScore = score;
+  myLastPts = points;
+});
+socket.on('answer_progress', ({ answered, total }) => {
+  document.getElementById('ans-progress').textContent = `${answered} / ${total} 人已作答`;
+});
+
+socket.on('question_reveal', ({ correctIndex, leaderboard, isLast }) => {
+  if (timerInterval) clearInterval(timerInterval);
+
+  const isCorrect = currentAnswer !== null && currentAnswer === correctIndex;
+  const didAnswer = currentAnswer !== null;
+
+  // 顯示正確/錯誤
+  document.querySelectorAll('.opt-btn').forEach((b, i) => {
+    b.classList.add('disabled');
+    if (i === correctIndex) b.classList.add('correct');
+    else if (i === currentAnswer) b.classList.add('wrong');
+  });
+
+  setTimeout(() => {
+    document.getElementById('result-emoji').textContent =
+      isCorrect ? '🎉' : (didAnswer ? '😅' : '⏰');
+    document.getElementById('result-label').textContent =
+      isCorrect ? '答對了！' : (didAnswer ? '答錯了！' : '時間到了！');
+    document.getElementById('result-pts').textContent =
+      myLastPts > 0 ? `+${myLastPts.toLocaleString()} 分` : '';
+    document.getElementById('result-total').textContent =
+      `目前總分：${myScore.toLocaleString()} 分`;
+    show('s-result');
+
+    // 2.5 秒後顯示排行榜
+    setTimeout(() => {
+      renderLB(leaderboard, 'lb-list');
+      document.getElementById('lb-status').textContent =
+        isLast ? '最後一題！準備揭曉最終結果...' : '等待下一題...';
+      show('s-leaderboard');
+    }, 2500);
+  }, 1800);
+});
+
+socket.on('game_over', ({ leaderboard }) => {
+  renderLB(leaderboard, 'final-lb-list');
+  show('s-gameover');
+});
+socket.on('game_reset', () => {
+  myScore = 0; myLastPts = 0; currentAnswer = null;
+  show('s-lobby');
+});
+</script>
+</body>
+</html>

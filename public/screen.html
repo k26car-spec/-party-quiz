@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大螢幕 — 派對問答</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+  min-height: 100vh; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px; overflow: hidden;
+}
+.screen { display: none; width: 100%; max-width: 1280px; }
+.screen.active { display: block; }
+
+/* ── Lobby ── */
+#s-lobby { text-align: center; }
+.lobby-title { font-size: 4.5rem; font-weight: 800; margin-bottom: 10px; }
+.lobby-sub   { font-size: 1.6rem; opacity: 0.6; margin-bottom: 50px; }
+.lobby-row   { display: flex; align-items: center; justify-content: center; gap: 80px; flex-wrap: wrap; }
+.lobby-qr img { width: 260px; border-radius: 20px; }
+.lobby-url   { font-size: 1.3rem; color: #f9ca24; margin: 14px 0; word-break: break-all; max-width: 360px; }
+.lobby-cnt   { font-size: 7rem; font-weight: 800; color: #e056fd; line-height: 1; }
+.lobby-cnt-label { font-size: 1.3rem; opacity: 0.65; }
+
+/* ── Countdown ── */
+#s-countdown { text-align: center; }
+.cd-label { font-size: 2rem; opacity: 0.7; margin-bottom: 10px; }
+.cd-num   { font-size: 18rem; font-weight: 800; color: #e056fd; line-height: 1; }
+
+/* ── Question ── */
+.q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.q-badge  { background: rgba(255,255,255,0.12); padding: 8px 24px; border-radius: 50px; font-size: 1.3rem; font-weight: 600; }
+.q-timer  { font-size: 3.5rem; font-weight: 800; color: #f9ca24; min-width: 80px; text-align: right; }
+.q-timer.urgent { color: #eb4d4b; animation: pulse 0.5s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+.timer-wrap { height: 16px; background: rgba(255,255,255,0.12); border-radius: 8px; overflow: hidden; margin-bottom: 32px; }
+.timer-bar  { height: 100%; background: linear-gradient(90deg,#6ab04c,#f9ca24,#eb4d4b); border-radius: 8px; transition: width 0.25s linear; }
+
+.q-text {
+  font-size: 2.8rem; font-weight: 700; line-height: 1.4;
+  text-align: center; padding: 30px 40px;
+  background: rgba(255,255,255,0.07); border-radius: 20px;
+  margin-bottom: 32px;
+}
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.opt-block {
+  padding: 26px 28px; border-radius: 18px;
+  font-size: 1.8rem; font-weight: 600;
+  display: flex; align-items: center; gap: 16px;
+  transition: filter 0.35s, transform 0.2s;
+}
+.opt-block.dim       { filter: brightness(0.3); }
+.opt-block.highlight { filter: brightness(1.3); box-shadow: 0 0 50px rgba(255,255,255,0.3); transform: scale(1.02); }
+.opt-icon { font-size: 2rem; }
+.opt-a { background: #e84393; }
+.opt-b { background: #1289A7; }
+.opt-c { background: #f0b429; color: #222; }
+.opt-d { background: #6ab04c; }
+.ans-prog { text-align: center; margin-top: 18px; font-size: 1.1rem; opacity: 0.6; }
+
+/* ── Leaderboard ── */
+#s-leaderboard { }
+.lb-title { font-size: 3.2rem; font-weight: 800; text-align: center; margin-bottom: 28px; }
+.lb-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lb-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 22px; border-radius: 14px;
+  background: rgba(255,255,255,0.07);
+  font-size: 1.4rem;
+  transition: transform 0.3s;
+}
+.lb-row.r1 { background: linear-gradient(135deg,rgba(255,215,0,.25),rgba(255,165,0,.15)); border: 1px solid gold; }
+.lb-row.r2 { background: rgba(192,192,192,.18); }
+.lb-row.r3 { background: rgba(205,127,50,.18); }
+.lb-rank  { font-size: 1.7rem; min-width: 42px; text-align: center; }
+.lb-name  { flex: 1; font-weight: 600; }
+.lb-score { font-weight: 800; color: #f9ca24; font-size: 1.5rem; }
+
+/* ── Game Over ── */
+#s-gameover { text-align: center; }
+.go-title { font-size: 4.5rem; font-weight: 800; margin-bottom: 36px; }
+</style>
+</head>
+<body>
+
+<!-- 大廳等候 -->
+<div class="screen active" id="s-lobby">
+  <div class="lobby-title">🎉 派對問答</div>
+  <div class="lobby-sub">掃描 QR Code 加入遊戲</div>
+  <div class="lobby-row">
+    <div class="lobby-qr">
+      <img id="qr-img" src="" alt="QR">
+      <div class="lobby-url" id="lobby-url">載入中...</div>
+    </div>
+    <div>
+      <div class="lobby-cnt" id="screen-p-count">0</div>
+      <div class="lobby-cnt-label">人已加入</div>
+    </div>
+  </div>
+</div>
+
+<!-- 倒數 -->
+<div class="screen" id="s-countdown">
+  <div class="cd-label">遊戲即將開始！</div>
+  <div class="cd-num" id="cd-num">3</div>
+</div>
+
+<!-- 題目 -->
+<div class="screen" id="s-question">
+  <div class="q-header">
+    <div class="q-badge" id="sc-q-badge">第 1 題</div>
+    <div class="q-timer" id="sc-timer">20</div>
+  </div>
+  <div class="timer-wrap"><div class="timer-bar" id="sc-timer-bar"></div></div>
+  <div class="q-text" id="sc-q-text"></div>
+  <div class="opts-grid">
+    <div class="opt-block opt-a" id="sc-opt-0"><span class="opt-icon">🔴</span><span id="sc-txt-0"></span></div>
+    <div class="opt-block opt-b" id="sc-opt-1"><span class="opt-icon">🔵</span><span id="sc-txt-1"></span></div>
+    <div class="opt-block opt-c" id="sc-opt-2"><span class="opt-icon">🟡</span><span id="sc-txt-2"></span></div>
+    <div class="opt-block opt-d" id="sc-opt-3"><span class="opt-icon">🟢</span><span id="sc-txt-3"></span></div>
+  </div>
+  <div class="ans-prog" id="sc-ans-prog"></div>
+</div>
+
+<!-- 排行榜（每題後） -->
+<div class="screen" id="s-leaderboard">
+  <div class="lb-title">🏆 目前排行</div>
+  <div class="lb-grid" id="sc-lb-grid"></div>
+</div>
+
+<!-- 遊戲結束 -->
+<div class="screen" id="s-gameover">
+  <div class="go-title">🎊 遊戲結束！</div>
+  <div class="lb-grid" id="sc-final-grid"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+socket.emit('join_screen');
+
+let timerInterval = null;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderLB(lb, gridId) {
+  const medals = ['🥇','🥈','🥉'];
+  const topCls = ['r1','r2','r3'];
+  document.getElementById(gridId).innerHTML = lb.map((item, i) =>
+    `<div class="lb-row ${topCls[i]||''}">
+      <span class="lb-rank">${i < 3 ? medals[i] : item.rank}</span>
+      <span class="lb-name">${item.name}</span>
+      <span class="lb-score">${item.score.toLocaleString()}</span>
+    </div>`
+  ).join('');
+}
+
+fetch('/api/qrcode').then(r => r.json()).then(d => {
+  document.getElementById('qr-img').src = d.qr;
+  document.getElementById('lobby-url').textContent = d.url;
+});
+
+socket.on('screen_state', ({ phase, playerCount }) => {
+  document.getElementById('screen-p-count').textContent = playerCount;
+  if (phase === 'lobby') show('s-lobby');
+});
+
+socket.on('player_count', n => {
+  document.getElementById('screen-p-count').textContent = n;
+});
+
+socket.on('game_starting', ({ countdown }) => {
+  show('s-countdown');
+  let n = countdown;
+  document.getElementById('cd-num').textContent = n;
+  const t = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(t); return; }
+    document.getElementById('cd-num').textContent = n;
+  }, 1000);
+});
+
+socket.on('question_start', data => {
+  show('s-question');
+  document.getElementById('sc-q-badge').textContent = `第 ${data.index+1} 題 ／ 共 ${data.total} 題`;
+  document.getElementById('sc-q-text').textContent = data.text;
+  document.getElementById('sc-ans-prog').textContent = '';
+  data.options.forEach((opt, i) => {
+    document.getElementById(`sc-txt-${i}`).textContent = opt;
+    document.getElementById(`sc-opt-${i}`).classList.remove('dim','highlight');
+  });
+
+  if (timerInterval) clearInterval(timerInterval);
+  const end = data.startTime + data.duration * 1000;
+  const bar = document.getElementById('sc-timer-bar');
+  const timerEl = document.getElementById('sc-timer');
+  function tick() {
+    const rem = Math.max(0, (end - Date.now()) / 1000);
+    bar.style.width = (rem / data.duration * 100) + '%';
+    timerEl.textContent = Math.ceil(rem);
+    timerEl.className = 'q-timer' + (rem <= 5 ? ' urgent' : '');
+    if (rem <= 0) clearInterval(timerInterval);
+  }
+  tick();
+  timerInterval = setInterval(tick, 250);
+});
+
+socket.on('answer_progress', ({ answered, total }) => {
+  document.getElementById('sc-ans-prog').textContent = `${answered} / ${total} 人已作答`;
+});
+
+socket.on('question_reveal', ({ correctIndex, leaderboard }) => {
+  if (timerInterval) clearInterval(timerInterval);
+  // 標示正確/錯誤選項
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById(`sc-opt-${i}`);
+    el.classList.remove('dim','highlight');
+    if (i === correctIndex) el.classList.add('highlight');
+    else el.classList.add('dim');
+  });
+
+  // 3 秒後切排行榜
+  setTimeout(() => {
+    renderLB(leaderboard, 'sc-lb-grid');
+    show('s-leaderboard');
+  }, 3000);
+});
+
+socket.on('game_over', ({ leaderboard }) => {
+  renderLB(leaderboard, 'sc-final-grid');
+  show('s-gameover');
+});
+
+socket.on('game_reset', () => show('s-lobby'));
+</script>
+</body>
+</html>

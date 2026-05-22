@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主持人後台</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif;
+  background: #0f0c29; color: #fff;
+  min-height: 100vh; padding: 24px;
+}
+.wrap { max-width: 960px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 20px; }
+h2 { font-size: 1.05rem; color: #c084fc; margin-bottom: 12px; font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media(max-width:620px){ .grid2{ grid-template-columns:1fr; } }
+
+.card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 20px;
+}
+
+.btn {
+  padding: 9px 18px; border-radius: 10px; border: none;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  transition: opacity 0.2s; white-space: nowrap;
+}
+.btn:hover { opacity: 0.82; }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn-purple { background: linear-gradient(135deg,#e056fd,#7c6ff7); color:#fff; }
+.btn-green  { background: #6ab04c; color:#fff; }
+.btn-red    { background: #eb4d4b; color:#fff; }
+.btn-gray   { background: rgba(255,255,255,0.15); color:#fff; }
+
+input, select, textarea {
+  width: 100%; padding: 9px 13px;
+  border-radius: 10px; border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07); color: #fff;
+  font-size: 0.92rem; outline: none; margin-bottom: 8px;
+}
+input:focus, select:focus, textarea:focus { border-color: #e056fd; }
+select option { background: #1a1a2e; }
+textarea { resize: none; }
+
+.qr-center { text-align: center; }
+.qr-center img { width: 160px; border-radius: 12px; margin-bottom: 8px; }
+.qr-url { font-size: 0.78rem; color: #a78bfa; word-break: break-all; }
+
+.stat-big { font-size: 3.2rem; font-weight: 800; color: #f9ca24; line-height: 1; }
+.stat-label { font-size: 0.85rem; opacity: 0.6; margin-bottom: 14px; }
+
+.phase-tag {
+  display: inline-block; padding: 4px 14px; border-radius: 20px;
+  font-size: 0.82rem; font-weight: 600; margin-bottom: 12px;
+}
+.ph-lobby    { background: #1289A7; }
+.ph-starting { background: #7c6ff7; }
+.ph-question { background: #6ab04c; }
+.ph-reveal   { background: #f9ca24; color: #333; }
+.ph-finished { background: #eb4d4b; }
+
+.ctrl-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.q-list { list-style: none; max-height: 320px; overflow-y: auto; }
+.q-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; margin-bottom: 6px;
+  background: rgba(255,255,255,0.07); border-radius: 10px;
+}
+.q-num { font-weight: 700; color: #c084fc; min-width: 22px; padding-top: 2px; }
+.q-body { flex: 1; }
+.q-title { font-size: 0.9rem; margin-bottom: 4px; }
+.q-ans { font-size: 0.78rem; color: #6ab04c; }
+.q-del { background: none; border: none; color: #eb4d4b; cursor: pointer; font-size: 1rem; padding: 2px; }
+
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  padding: 10px 24px; border-radius: 50px;
+  font-weight: 600; font-size: 0.9rem;
+  display: none; z-index: 99; color: #fff;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎮 主持人後台</h1>
+
+  <div class="grid2">
+    <!-- QR Code -->
+    <div class="card">
+      <h2>掃碼加入</h2>
+      <div class="qr-center">
+        <img id="qr-img" src="" alt="QR Code">
+        <div class="qr-url" id="qr-url">載入中...</div>
+      </div>
+    </div>
+
+    <!-- 狀態 + 控制 -->
+    <div class="card">
+      <h2>遊戲狀態</h2>
+      <div class="stat-big" id="p-count">0</div>
+      <div class="stat-label">人已加入</div>
+      <div class="phase-tag ph-lobby" id="phase-tag">等待中</div>
+      <div style="font-size:0.85rem;opacity:0.6;margin-bottom:12px" id="q-prog-host"></div>
+      <div class="ctrl-row">
+        <button class="btn btn-green" id="btn-start" onclick="hostStart()">▶ 開始遊戲</button>
+        <button class="btn btn-purple" id="btn-next" onclick="hostNext()" disabled>下一題 →</button>
+        <button class="btn btn-gray" onclick="hostReset()">↺ 重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增題目 -->
+  <div class="card" style="margin-bottom:16px">
+    <h2>新增題目</h2>
+    <textarea id="q-text-input" rows="2" placeholder="題目內容"></textarea>
+    <div class="opts-grid">
+      <input id="opt-0" placeholder="A 選項">
+      <input id="opt-1" placeholder="B 選項">
+      <input id="opt-2" placeholder="C 選項">
+      <input id="opt-3" placeholder="D 選項">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <select id="correct-sel" style="margin-bottom:0">
+        <option value="0">✅ A 正確</option>
+        <option value="1">✅ B 正確</option>
+        <option value="2">✅ C 正確</option>
+        <option value="3">✅ D 正確</option>
+      </select>
+      <button class="btn btn-purple" onclick="addQuestion()">＋ 新增</button>
+    </div>
+  </div>
+
+  <!-- 題目列表 -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="margin:0">題目列表（<span id="q-count">0</span> 題）</h2>
+      <button class="btn btn-green" onclick="saveQuestions()">💾 儲存並更新</button>
+    </div>
+    <ul class="q-list" id="q-list"></ul>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let questions = [];
+let phase = 'lobby';
+
+function toast(msg, color = '#6ab04c') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.background = color;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 2500);
+}
+
+function setPhase(p) {
+  phase = p;
+  const tag = document.getElementById('phase-tag');
+  const map = {
+    lobby:    ['等待中',   'ph-lobby'],
+    starting: ['即將開始', 'ph-starting'],
+    question: ['答題中',   'ph-question'],
+    reveal:   ['答案揭曉', 'ph-reveal'],
+    finished: ['遊戲結束', 'ph-finished'],
+  };
+  const [label, cls] = map[p] || ['等待中','ph-lobby'];
+  tag.textContent = label;
+  tag.className = 'phase-tag ' + cls;
+  document.getElementById('btn-start').disabled = p !== 'lobby';
+  document.getElementById('btn-next').disabled  = p !== 'reveal';
+}
+
+function renderQuestions() {
+  document.getElementById('q-count').textContent = questions.length;
+  const optLetters = ['A','B','C','D'];
+  document.getElementById('q-list').innerHTML = questions.map((q, i) => `
+    <li class="q-item">
+      <span class="q-num">${i+1}</span>
+      <div class="q-body">
+        <div class="q-title">${q.text}</div>
+        <div class="q-ans">正解：${optLetters[q.correctIndex]}. ${q.options[q.correctIndex]}</div>
+      </div>
+      <button class="q-del" onclick="delQ(${i})">✕</button>
+    </li>
+  `).join('');
+}
+
+function addQuestion() {
+  const text = document.getElementById('q-text-input').value.trim();
+  const opts = [0,1,2,3].map(i => document.getElementById(`opt-${i}`).value.trim());
+  const correct = parseInt(document.getElementById('correct-sel').value);
+  if (!text || opts.some(o => !o)) {
+    toast('請填寫題目和全部四個選項', '#eb4d4b'); return;
+  }
+  questions.push({ text, options: opts, correctIndex: correct });
+  renderQuestions();
+  document.getElementById('q-text-input').value = '';
+  [0,1,2,3].forEach(i => document.getElementById(`opt-${i}`).value = '');
+  toast('✅ 已新增');
+}
+
+function delQ(i) {
+  questions.splice(i, 1);
+  renderQuestions();
+}
+
+function saveQuestions() {
+  if (!questions.length) { toast('請先新增題目', '#eb4d4b'); return; }
+  socket.emit('host_set_questions', questions);
+}
+
+function hostStart() {
+  if (!questions.length) { toast('請先儲存題目', '#eb4d4b'); return; }
+  socket.emit('host_start');
+}
+function hostNext() { socket.emit('host_next'); }
+function hostReset() {
+  if (!confirm('確定重置？所有分數清零。')) return;
+  socket.emit('host_reset');
+}
+
+fetch('/api/qrcode').then(r => r.json()).then(d => {
+  document.getElementById('qr-img').src = d.qr;
+  document.getElementById('qr-url').textContent = d.url;
+});
+
+socket.on('questions_saved', n => toast(`✅ 已儲存 ${n} 題`));
+socket.on('player_count', n => document.getElementById('p-count').textContent = n);
+socket.on('game_starting', () => setPhase('starting'));
+socket.on('question_start', data => {
+  setPhase('question');
+  document.getElementById('q-prog-host').textContent =
+    `第 ${data.index+1} 題 ／ 共 ${data.total} 題`;
+});
+socket.on('answer_progress', ({ answered, total }) => {
+  if (phase === 'question') {
+    document.getElementById('q-prog-host').textContent =
+      document.getElementById('q-prog-host').textContent.replace(/ — .*/, '') +
+      ` — ${answered}/${total} 人作答`;
+  }
+});
+socket.on('question_reveal', () => setPhase('reveal'));
+socket.on('game_over', () => setPhase('finished'));
+socket.on('game_reset', () => {
+  setPhase('lobby');
+  document.getElementById('q-prog-host').textContent = '';
+});
+</script>
+</body>
+</html>
