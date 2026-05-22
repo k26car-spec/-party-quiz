@@ -115,6 +115,13 @@ textarea { resize: none; }
     </div>
   </div>
 
+  <!-- 一鍵載入預設題目 -->
+  <div class="card" style="margin-bottom:16px">
+    <h2>快速載入</h2>
+    <button class="btn btn-purple" onclick="loadPreset()">🎉 一鍵載入歡送會 15 題</button>
+    <span style="font-size:0.8rem;opacity:0.5;margin-left:10px">點完記得按「💾 儲存並更新」</span>
+  </div>
+
   <!-- 新增題目 -->
   <div class="card" style="margin-bottom:16px">
     <h2>新增題目</h2>
@@ -222,6 +229,31 @@ function hostStart() {
   socket.emit('host_start');
 }
 function hostNext() { socket.emit('host_next'); }
+const PRESET_QUESTIONS = [
+  { text: "如果把研究所生活比喻成一個資訊系統，最常出現的錯誤訊息會是？", options: ["系統忙碌中，請稍後再試", "權限不足，請聯絡教授", "記憶體不足，請先睡覺", "資料尚未完成，請補交報告"], correctIndex: 3 },
+  { text: "資管職碩生最需要的「雲端服務」是什麼？", options: ["Google Drive", "iCloud", "教授的慈悲雲", "截止日前自動完成報告雲"], correctIndex: 2 },
+  { text: "下列哪一項最像職碩生的日常資料流程？", options: ["收集資料 → 分析資料 → 完成報告", "開會 → 加班 → 寫作業 → 懷疑人生", "訂便當 → 討論分組 → 忘記交檔案", "以上皆是"], correctIndex: 3 },
+  { text: "在資訊管理中，「資料治理」很重要；在職碩生活中，最需要治理的是什麼？", options: ["電腦硬碟", "LINE 群組訊息", "睡眠時間", "報告版本：final、final2、final最新版"], correctIndex: 3 },
+  { text: "如果用 AI 來協助寫論文或報告，最重要的能力是？", options: ["讓 AI 幫你全部寫完", "會問好問題，也會判斷答案對不對", "把所有內容都複製貼上", "只要有摘要就好"], correctIndex: 1 },
+  { text: "職碩班最常見的「系統整合」情境是？", options: ["ERP 串接 CRM", "公司工作串接家庭生活", "課堂報告串接期末專案", "以上皆是"], correctIndex: 3 },
+  { text: "如果把同學群組當成一個企業系統，誰最像「系統管理員」？", options: ["永遠第一個提醒交作業的人", "永遠負責開 Google Meet 的人", "永遠找得到檔案連結的人", "以上都是"], correctIndex: 3 },
+  { text: "下列哪個最符合「敏捷開發」在職碩班的真實應用？", options: ["每週固定衝刺進度", "每次開會都有清楚待辦", "截止日前 48 小時突然爆發戰鬥力", "持續交付高品質睡眠"], correctIndex: 2 },
+  { text: "歡送會中最需要備份的是什麼？", options: ["照片", "影片", "祝福語", "今天大家還很清醒時的記憶"], correctIndex: 3 },
+  { text: "如果教授是資料庫，最常被學生查詢的是？", options: ["成績什麼時候出來", "報告格式可不可以放寬", "這題會不會考", "老師，這樣可以嗎？"], correctIndex: 3 },
+  { text: "對職碩生來說，最像「高可用性架構」的是？", options: ["電腦不當機", "網路不卡", "咖啡、宵夜、同學支援永不中斷", "雲端硬碟自動同步"], correctIndex: 2 },
+  { text: "畢業後最希望自己的人生系統升級成哪個版本？", options: ["工作穩定版", "薪水更新版", "睡眠修復版", "以上全部安裝"], correctIndex: 3 },
+  { text: "下列哪一項最像職碩班的「專案風險」？", options: ["組員已讀不回", "老闆臨時交辦工作", "期末報告遇到公司加班", "以上皆是"], correctIndex: 3 },
+  { text: "如果人生是一個儀表板 Dashboard，畢業後最想看到哪個指標上升？", options: ["存款餘額", "睡眠時數", "職涯成長", "幸福感"], correctIndex: 3 },
+  { text: "對即將畢業的同學來說，最適合的一句資訊管理式祝福是？", options: ["願你的人生資料永遠完整備份", "願你的職涯系統穩定擴充", "願你的決策都有高品質資料支援", "以上都是，並且持續最佳化"], correctIndex: 3 },
+];
+
+function loadPreset() {
+  if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;
+  questions = PRESET_QUESTIONS.map(q => ({ ...q }));
+  renderQuestions();
+  toast('🎉 已載入 15 題歡送會題目！記得按儲存');
+}
+
 function hostReset() {
   if (!confirm('確定重置？所有分數清零。')) return;
   socket.emit('host_reset');
