@@ -152,6 +152,7 @@ input[type="text"]:focus { border-color: #e056fd; }
   <h2 id="result-label"></h2>
   <div class="points-big" id="result-pts"></div>
   <div class="sub-text" id="result-total"></div>
+  <div id="result-rank" style="margin-top:6px;font-size:1.15rem;font-weight:700;color:#c084fc"></div>
 </div>
 
 <!-- 排行榜（每題後） -->
@@ -174,6 +175,8 @@ const socket = io();
 let myName = '';
 let myScore = 0;
 let myLastPts = 0;
+let myRank = 0;
+let myRankTotal = 0;
 let currentAnswer = null;
 let timerInterval = null;
 
@@ -268,6 +271,10 @@ socket.on('answer_result', ({ isCorrect, points, score }) => {
   myScore = score;
   myLastPts = points;
 });
+socket.on('your_rank', ({ rank, total }) => {
+  myRank = rank;
+  myRankTotal = total;
+});
 socket.on('answer_progress', ({ answered, total }) => {
   document.getElementById('ans-progress').textContent = `${answered} / ${total} 人已作答`;
 });
@@ -294,6 +301,8 @@ socket.on('question_reveal', ({ correctIndex, leaderboard, isLast }) => {
       myLastPts > 0 ? `+${myLastPts.toLocaleString()} 分` : '';
     document.getElementById('result-total').textContent =
       `目前總分：${myScore.toLocaleString()} 分`;
+    document.getElementById('result-rank').textContent =
+      myRank > 0 ? `目前排名：第 ${myRank} 名 ／ 共 ${myRankTotal} 人` : '';
     show('s-result');
 
     // 2.5 秒後顯示排行榜

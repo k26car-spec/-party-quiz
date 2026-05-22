@@ -56,10 +56,21 @@ function revealAnswer() {
   if (state.timer) clearTimeout(state.timer);
   const q = state.questions[state.currentQ];
   state.phase = 'reveal';
+
+  const fullRanking = getLeaderboard(999);
+  const top10 = fullRanking.slice(0, 10);
+  const total = fullRanking.length;
+
   io.emit('question_reveal', {
     correctIndex: q.correctIndex,
-    leaderboard: getLeaderboard(),
+    leaderboard: top10,
     isLast: state.currentQ >= state.questions.length - 1,
+  });
+
+  // 傳個人排名給每位玩家
+  Object.entries(state.players).forEach(([sid, player]) => {
+    const rank = fullRanking.findIndex(p => p.name === player.name) + 1;
+    io.to(sid).emit('your_rank', { rank, total });
   });
 }
 
