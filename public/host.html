@@ -161,6 +161,14 @@ const socket = io();
 let questions = [];
 let phase = 'lobby';
 
+socket.on('connect', () => socket.emit('host_sync'));
+socket.on('host_state', ({ phase: p, currentQ, total, playerCount }) => {
+  setPhase(p);
+  document.getElementById('p-count').textContent = playerCount;
+  if (currentQ >= 0 && total > 0)
+    document.getElementById('q-prog-host').textContent = `第 ${currentQ+1} 題 ／ 共 ${total} 題`;
+});
+
 function toast(msg, color = '#6ab04c') {
   const el = document.getElementById('toast');
   el.textContent = msg; el.style.background = color;

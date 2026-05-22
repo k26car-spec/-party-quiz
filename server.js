@@ -140,6 +140,15 @@ io.on('connection', (socket) => {
     broadcastPlayerCount();
   });
 
+  socket.on('host_sync', () => {
+    socket.emit('host_state', {
+      phase: state.phase,
+      currentQ: state.currentQ,
+      total: state.questions.length,
+      playerCount: Object.keys(state.players).length,
+    });
+  });
+
   socket.on('join_screen', () => {
     socket.join('screen');
     socket.emit('screen_state', {
