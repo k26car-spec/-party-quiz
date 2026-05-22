@@ -66,7 +66,8 @@ body {
 /* ── Leaderboard ── */
 #s-leaderboard { text-align: center; }
 .lb-title { font-size: 3.2rem; font-weight: 800; text-align: center; margin-bottom: 28px; }
-.lb-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 900px; margin: 0 auto; }
+.lb-grid  { display: flex; flex-wrap: wrap; gap: 14px; max-width: 940px; margin: 0 auto; justify-content: center; }
+.lb-row   { flex: 1 1 420px; max-width: 460px; }
 .lb-row {
   display: flex; align-items: center; gap: 16px;
   padding: 18px 22px; border-radius: 14px;
