@@ -179,6 +179,7 @@ let myRank = 0;
 let myRankTotal = 0;
 let currentAnswer = null;
 let timerInterval = null;
+let revealTimers = [];
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -240,6 +241,8 @@ socket.on('game_starting', ({ countdown }) => {
 });
 
 socket.on('question_start', data => {
+  revealTimers.forEach(t => clearTimeout(t));
+  revealTimers = [];
   currentAnswer = null;
   show('s-question');
   document.getElementById('q-progress').textContent = `${data.index + 1} / ${data.total}`;
@@ -292,7 +295,7 @@ socket.on('question_reveal', ({ correctIndex, leaderboard, isLast }) => {
     else if (i === currentAnswer) b.classList.add('wrong');
   });
 
-  setTimeout(() => {
+  const t1 = setTimeout(() => {
     document.getElementById('result-emoji').textContent =
       isCorrect ? '🎉' : (didAnswer ? '😅' : '⏰');
     document.getElementById('result-label').textContent =
@@ -305,14 +308,15 @@ socket.on('question_reveal', ({ correctIndex, leaderboard, isLast }) => {
       myRank > 0 ? `目前排名：第 ${myRank} 名 ／ 共 ${myRankTotal} 人` : '';
     show('s-result');
 
-    // 2.5 秒後顯示排行榜
-    setTimeout(() => {
+    const t2 = setTimeout(() => {
       renderLB(leaderboard, 'lb-list');
       document.getElementById('lb-status').textContent =
         isLast ? '最後一題！準備揭曉最終結果...' : '等待下一題...';
       show('s-leaderboard');
     }, 2500);
+    revealTimers.push(t2);
   }, 1800);
+  revealTimers.push(t1);
 });
 
 socket.on('game_over', ({ leaderboard }) => {
