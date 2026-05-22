@@ -157,9 +157,12 @@ input[type="text"]:focus { border-color: #e056fd; }
 
 <!-- 排行榜（每題後） -->
 <div class="screen" id="s-leaderboard">
-  <h2>🏆 目前排行</h2>
-  <ul class="lb-list" id="lb-list"></ul>
-  <div class="sub-text" id="lb-status">等待下一題...</div>
+  <div class="emoji-lg" id="lb-medal">🏆</div>
+  <div style="font-size:1rem;opacity:0.6;margin-bottom:4px">你目前排名</div>
+  <div style="font-size:5rem;font-weight:900;color:#f9ca24;line-height:1" id="lb-rank-num">-</div>
+  <div style="font-size:1rem;opacity:0.5" id="lb-rank-total"></div>
+  <div style="font-size:1.3rem;font-weight:700;color:#c084fc;margin-top:8px" id="lb-score-display"></div>
+  <div class="sub-text" id="lb-status" style="margin-top:16px">等待下一題...</div>
 </div>
 
 <!-- 結束 -->
@@ -347,7 +350,11 @@ socket.on('question_reveal', ({ correctIndex, leaderboard, isLast }) => {
     show('s-result');
 
     const t2 = setTimeout(() => {
-      renderLB(leaderboard, 'lb-list');
+      const medals = ['🥇','🥈','🥉'];
+      document.getElementById('lb-medal').textContent = myRank <= 3 ? medals[myRank-1] : '🏅';
+      document.getElementById('lb-rank-num').textContent = myRank > 0 ? myRank : '-';
+      document.getElementById('lb-rank-total').textContent = myRankTotal > 0 ? `共 ${myRankTotal} 人` : '';
+      document.getElementById('lb-score-display').textContent = myScore > 0 ? `總分 ${myScore.toLocaleString()} 分` : '';
       document.getElementById('lb-status').textContent =
         isLast ? '最後一題！準備揭曉最終結果...' : '等待下一題...';
       show('s-leaderboard');
