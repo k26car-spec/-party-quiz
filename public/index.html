@@ -108,7 +108,7 @@ input[type="text"]:focus { border-color: #e056fd; }
 <div class="screen active" id="s-lobby">
   <div class="emoji-lg">🎉</div>
   <h1>派對問答</h1>
-  <p style="opacity:0.65;text-align:center">輸入暱稱，加入遊戲</p>
+  <p id="join-label" style="opacity:0.65;text-align:center">輸入暱稱，加入遊戲</p>
   <input type="text" id="nickname-input" placeholder="你的暱稱（最多 20 字）" maxlength="20" autocomplete="off">
   <button class="btn btn-primary" onclick="joinGame()">加入遊戲</button>
   <div class="err" id="join-err" style="display:none"></div>
@@ -184,9 +184,18 @@ input[type="text"]:focus { border-color: #e056fd; }
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
+let rosterMode = false;
 socket.on('connect', () => {
-  const saved = localStorage.getItem('pq-name');
-  if (saved) socket.emit('player_join', { name: saved });
+  const savedName = localStorage.getItem('pq-name');
+  const savedId   = localStorage.getItem('pq-studentId');
+  if (savedName) socket.emit('player_join', { name: savedName, studentId: savedId || '' });
+});
+socket.on('roster_active', (active) => {
+  rosterMode = active;
+  const input = document.getElementById('nickname-input');
+  const label = document.getElementById('join-label');
+  input.placeholder = active ? '請輸入學號' : '你的暱稱（最多 20 字）';
+  if (label) label.textContent = active ? '輸入學號加入遊戲' : '輸入暱稱，加入遊戲';
 });
 let myName = '';
 let myScore = 0;
@@ -203,9 +212,14 @@ function show(id) {
 }
 
 function joinGame() {
-  const name = document.getElementById('nickname-input').value.trim();
-  if (!name) return;
-  socket.emit('player_join', { name });
+  const val = document.getElementById('nickname-input').value.trim();
+  if (!val) return;
+  if (rosterMode) {
+    localStorage.setItem('pq-studentId', val);
+    socket.emit('player_join', { name: '', studentId: val });
+  } else {
+    socket.emit('player_join', { name: val, studentId: '' });
+  }
 }
 document.getElementById('nickname-input').addEventListener('keypress', e => {
   if (e.key === 'Enter') joinGame();

@@ -18,13 +18,14 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.use(express.json());
 
 let state = {
-  phase: 'lobby',      // lobby | starting | question | reveal | leaderboard | finished
+  phase: 'lobby',
   questions: [],
   currentQ: -1,
   players: {},         // socketId -> { name, score, answer }
   startTime: null,
   duration: 20,
   timer: null,
+  roster: {},          // { studentId: name }
 };
 
 function getLeaderboard(limit = 20) {
@@ -32,6 +33,22 @@ function getLeaderboard(limit = 20) {
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((p, i) => ({ rank: i + 1, name: p.name, score: p.score }));
+}
+
+function buildSyncData() {
+  const syncData = { phase: state.phase };
+  if (state.phase === 'question' && state.currentQ >= 0) {
+    const q = state.questions[state.currentQ];
+    syncData.question = {
+      index: state.currentQ,
+      total: state.questions.length,
+      text: q.text,
+      options: q.options,
+      duration: state.duration,
+      startTime: state.startTime,
+    };
+  }
+  return syncData;
 }
 
 function broadcastPlayerCount() {
@@ -81,40 +98,65 @@ function revealAnswer() {
 }
 
 io.on('connection', (socket) => {
-  socket.on('player_join', ({ name }) => {
-    const n = (name || '').trim().slice(0, 20);
-    if (!n) return;
+  // 新連線告知是否啟用名單模式
+  if (Object.keys(state.roster).length > 0) {
+    socket.emit('roster_active', true);
+  }
 
-    // 相同名字 → 重連，恢復分數
-    const existing = Object.entries(state.players).find(([, p]) => p.name === n);
+  socket.on('player_join', ({ name, studentId }) => {
+    const n = (name || '').trim().slice(0, 20);
+    const sid = (studentId || '').trim();
+
+    // 1. 相同名字 → 重連，恢復分數（名單模式也適用）
+    const existing = Object.entries(state.players).find(([, p]) => p.name === n && n !== '');
     if (existing) {
       const [oldSid, playerData] = existing;
       delete state.players[oldSid];
       state.players[socket.id] = { ...playerData, answer: null };
-    } else if (state.phase !== 'lobby') {
+      socket.emit('join_ok', { name: n, score: state.players[socket.id].score });
+      broadcastPlayerCount();
+      const syncData = buildSyncData();
+      socket.emit('player_sync', syncData);
+      return;
+    }
+
+    // 2. 新加入
+    let resolvedName = '';
+    const hasRoster = Object.keys(state.roster).length > 0;
+
+    if (hasRoster) {
+      if (!sid) { socket.emit('join_error', '請輸入學號'); return; }
+      resolvedName = state.roster[sid];
+      if (!resolvedName) { socket.emit('join_error', `學號 ${sid} 不在名單中`); return; }
+      const alreadyIn = Object.values(state.players).find(p => p.name === resolvedName);
+      if (alreadyIn) { socket.emit('join_error', '此學號已加入遊戲'); return; }
+    } else {
+      resolvedName = n;
+      if (!resolvedName) return;
+    }
+
+    if (state.phase !== 'lobby') {
       socket.emit('join_error', '遊戲已開始，無法加入');
       return;
-    } else {
-      state.players[socket.id] = { name: n, score: 0, answer: null };
     }
 
-    socket.emit('join_ok', { name: n, score: state.players[socket.id].score });
+    state.players[socket.id] = { name: resolvedName, score: 0, answer: null };
+    socket.emit('join_ok', { name: resolvedName, score: 0 });
     broadcastPlayerCount();
+    socket.emit('player_sync', buildSyncData());
+  });
 
-    // 永遠送 player_sync，讓客戶端自己決定顯示哪個畫面
-    const syncData = { phase: state.phase };
-    if (state.phase === 'question' && state.currentQ >= 0) {
-      const q = state.questions[state.currentQ];
-      syncData.question = {
-        index: state.currentQ,
-        total: state.questions.length,
-        text: q.text,
-        options: q.options,
-        duration: state.duration,
-        startTime: state.startTime,
-      };
-    }
-    socket.emit('player_sync', syncData);
+  socket.on('host_set_roster', (roster) => {
+    state.roster = roster;
+    const count = Object.keys(roster).length;
+    socket.emit('roster_saved', count);
+    io.emit('roster_active', count > 0);
+  });
+
+  socket.on('host_clear_roster', () => {
+    state.roster = {};
+    socket.emit('roster_saved', 0);
+    io.emit('roster_active', false);
   });
 
   socket.on('submit_answer', ({ answerIndex }) => {
@@ -187,6 +229,7 @@ io.on('connection', (socket) => {
       currentQ: state.currentQ,
       total: state.questions.length,
       playerCount: Object.keys(state.players).length,
+      rosterCount: Object.keys(state.roster).length,
     });
   });
 

@@ -122,6 +122,24 @@ textarea { resize: none; }
     <span style="font-size:0.8rem;opacity:0.5;margin-left:10px">點完記得按「💾 儲存並更新」</span>
   </div>
 
+  <!-- 匯入玩家名單 -->
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="margin:0">玩家名單</h2>
+      <div id="mode-badge" style="font-size:0.8rem;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.12)">匿名模式</div>
+    </div>
+    <div style="font-size:0.82rem;opacity:0.55;margin-bottom:10px">
+      匯入名單後切換為「名單模式」：玩家需輸入學號才能加入，不在名單內的人無法登入。<br>
+      清除名單後回到「匿名模式」：玩家自行輸入暱稱加入。
+    </div>
+    <textarea id="roster-input" rows="5" placeholder="貼上名單，每行一筆（學號 姓名），支援空格、Tab 或逗號分隔&#10;&#10;範例：&#10;B12345678	王小明&#10;B23456789	李大華"></textarea>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-purple" onclick="importRoster()">📋 匯入名單（切名單模式）</button>
+      <button class="btn btn-gray" onclick="clearRoster()">✕ 清除名單（回匿名模式）</button>
+      <span id="roster-status" style="font-size:0.85rem;color:#6ab04c"></span>
+    </div>
+  </div>
+
   <!-- 新增題目 -->
   <div class="card" style="margin-bottom:16px">
     <h2>新增題目</h2>
@@ -162,11 +180,20 @@ let questions = [];
 let phase = 'lobby';
 
 socket.on('connect', () => socket.emit('host_sync'));
-socket.on('host_state', ({ phase: p, currentQ, total, playerCount }) => {
+socket.on('host_state', ({ phase: p, currentQ, total, playerCount, rosterCount }) => {
   setPhase(p);
   document.getElementById('p-count').textContent = playerCount;
   if (currentQ >= 0 && total > 0)
     document.getElementById('q-prog-host').textContent = `第 ${currentQ+1} 題 ／ 共 ${total} 題`;
+  const badge = document.getElementById('mode-badge');
+  if (rosterCount > 0) {
+    document.getElementById('roster-status').textContent = `✅ 已匯入 ${rosterCount} 人`;
+    badge.textContent = '名單模式';
+    badge.style.background = 'rgba(106,176,76,0.3)';
+  } else {
+    badge.textContent = '匿名模式';
+    badge.style.background = 'rgba(255,255,255,0.12)';
+  }
 });
 
 function toast(msg, color = '#6ab04c') {
@@ -262,6 +289,31 @@ function loadPreset() {
   toast('🎉 已載入 15 題歡送會題目！記得按儲存');
 }
 
+function importRoster() {
+  const text = document.getElementById('roster-input').value.trim();
+  if (!text) { toast('請貼上名單內容', '#eb4d4b'); return; }
+  const roster = {};
+  text.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    // 支援空格、Tab、逗號分隔；第一欄學號，其餘為姓名
+    const parts = line.split(/[\t,，]+|(?<=\S)\s+/);
+    if (parts.length >= 2) {
+      const id = parts[0].trim();
+      const name = parts.slice(1).join('').trim();
+      if (id && name) roster[id] = name;
+    }
+  });
+  const count = Object.keys(roster).length;
+  if (count === 0) { toast('解析失敗，請確認格式', '#eb4d4b'); return; }
+  socket.emit('host_set_roster', roster);
+}
+
+function clearRoster() {
+  socket.emit('host_clear_roster');
+  document.getElementById('roster-input').value = '';
+}
+
 function hostReset() {
   if (!confirm('確定重置？所有分數清零。')) return;
   socket.emit('host_reset');
@@ -273,6 +325,12 @@ fetch('/api/qrcode').then(r => r.json()).then(d => {
 });
 
 socket.on('questions_saved', n => toast(`✅ 已儲存 ${n} 題`));
+socket.on('roster_saved', n => {
+  document.getElementById('roster-status').textContent = n > 0 ? `✅ 已匯入 ${n} 人` : '名單已清除';
+  document.getElementById('mode-badge').textContent = n > 0 ? '名單模式' : '匿名模式';
+  document.getElementById('mode-badge').style.background = n > 0 ? 'rgba(106,176,76,0.3)' : 'rgba(255,255,255,0.12)';
+  toast(n > 0 ? `✅ 匯入 ${n} 位學生，已切換名單模式` : '已清除名單，回到匿名模式');
+});
 socket.on('player_count', n => document.getElementById('p-count').textContent = n);
 socket.on('game_starting', () => setPhase('starting'));
 socket.on('question_start', data => {
