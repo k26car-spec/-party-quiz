@@ -101,23 +101,20 @@ io.on('connection', (socket) => {
     socket.emit('join_ok', { name: n, score: state.players[socket.id].score });
     broadcastPlayerCount();
 
-    // 告訴重連的玩家目前在哪個畫面
-    if (state.phase === 'question') {
+    // 永遠送 player_sync，讓客戶端自己決定顯示哪個畫面
+    const syncData = { phase: state.phase };
+    if (state.phase === 'question' && state.currentQ >= 0) {
       const q = state.questions[state.currentQ];
-      socket.emit('player_sync', {
-        phase: 'question',
-        question: {
-          index: state.currentQ,
-          total: state.questions.length,
-          text: q.text,
-          options: q.options,
-          duration: state.duration,
-          startTime: state.startTime,
-        }
-      });
-    } else if (state.phase !== 'lobby') {
-      socket.emit('player_sync', { phase: state.phase });
+      syncData.question = {
+        index: state.currentQ,
+        total: state.questions.length,
+        text: q.text,
+        options: q.options,
+        duration: state.duration,
+        startTime: state.startTime,
+      };
     }
+    socket.emit('player_sync', syncData);
   });
 
   socket.on('submit_answer', ({ answerIndex }) => {

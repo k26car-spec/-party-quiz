@@ -224,16 +224,29 @@ function renderLB(lb, listId) {
 }
 
 socket.on('join_ok', ({ name, score }) => {
+  const isAutoJoin = !!localStorage.getItem('pq-name');
   myName = name;
-  if (score) myScore = score;
+  if (score !== undefined) myScore = score;
   localStorage.setItem('pq-name', name);
-  document.getElementById('waiting-name').textContent = `你好，${name}！`;
-  show('s-waiting');
+  revealTimers.forEach(t => clearTimeout(t));
+  revealTimers = [];
+  // 第一次手動加入才顯示等待中；重連由 player_sync 決定畫面
+  if (!isAutoJoin) {
+    document.getElementById('waiting-name').textContent = `你好，${name}！`;
+    show('s-waiting');
+  }
 });
+
 socket.on('player_sync', ({ phase, question }) => {
-  if (phase === 'question' && question) {
-    revealTimers.forEach(t => clearTimeout(t));
-    revealTimers = [];
+  // 先清掉所有舊計時器
+  revealTimers.forEach(t => clearTimeout(t));
+  revealTimers = [];
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+  if (phase === 'lobby' || phase === 'starting') {
+    document.getElementById('waiting-name').textContent = `你好，${myName}！`;
+    show('s-waiting');
+  } else if (phase === 'question' && question) {
     currentAnswer = null;
     show('s-question');
     document.getElementById('q-progress').textContent = `${question.index + 1} / ${question.total}`;
@@ -245,7 +258,6 @@ socket.on('player_sync', ({ phase, question }) => {
       b.textContent = `${lbl}. ${question.options[i]}`;
       b.classList.remove('disabled','correct','wrong');
     });
-    if (timerInterval) clearInterval(timerInterval);
     const end = question.startTime + question.duration * 1000;
     const bar = document.getElementById('timer-bar');
     function tick() {
@@ -255,7 +267,12 @@ socket.on('player_sync', ({ phase, question }) => {
       if (rem <= 0) clearInterval(timerInterval);
     }
     tick(); timerInterval = setInterval(tick, 250);
-  } else if (phase === 'reveal' || phase === 'starting') {
+  } else if (phase === 'reveal') {
+    const medals = ['🥇','🥈','🥉'];
+    document.getElementById('lb-medal').textContent = myRank > 0 && myRank <= 3 ? medals[myRank-1] : '🏅';
+    document.getElementById('lb-rank-num').textContent = myRank > 0 ? myRank : '-';
+    document.getElementById('lb-rank-total').textContent = myRankTotal > 0 ? `共 ${myRankTotal} 人` : '';
+    document.getElementById('lb-score-display').textContent = myScore > 0 ? `總分 ${myScore.toLocaleString()} 分` : '';
     document.getElementById('lb-status').textContent = '等待下一題...';
     show('s-leaderboard');
   } else if (phase === 'finished') {
