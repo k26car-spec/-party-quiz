@@ -375,20 +375,6 @@ socket.on('question_reveal', ({ correctIndex, leaderboard, isLast }) => {
     document.getElementById('q-rank-pos').textContent =
       myRank > 0 ? `目前第 ${myRank} 名 ／ 共 ${myRankTotal} 人` : '';
     banner.style.display = 'block';
-
-    // 3 秒後切到大排名畫面
-    const t2 = setTimeout(() => {
-      banner.style.display = 'none';
-      const medals = ['🥇','🥈','🥉'];
-      document.getElementById('lb-medal').textContent = myRank > 0 && myRank <= 3 ? medals[myRank-1] : '🏅';
-      document.getElementById('lb-rank-num').textContent = myRank > 0 ? myRank : '-';
-      document.getElementById('lb-rank-total').textContent = myRankTotal > 0 ? `共 ${myRankTotal} 人` : '';
-      document.getElementById('lb-score-display').textContent = myScore > 0 ? `總分 ${myScore.toLocaleString()} 分` : '';
-      document.getElementById('lb-status').textContent =
-        isLast ? '最後一題！準備揭曉最終結果...' : '等待下一題...';
-      show('s-leaderboard');
-    }, 3000);
-    revealTimers.push(t2);
   }, 400);
   revealTimers.push(t1);
 });
