@@ -135,6 +135,15 @@ input[type="text"]:focus { border-color: #e056fd; }
     <span id="q-time">20</span>
   </div>
   <div class="timer-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+
+  <!-- 答案揭曉後顯示的排名橫幅 -->
+  <div id="q-rank-banner" style="display:none;width:100%;padding:14px 16px;border-radius:14px;background:rgba(224,86,253,0.22);border:1px solid rgba(224,86,253,0.45);text-align:center">
+    <div id="q-rank-emoji" style="font-size:1.8rem;margin-bottom:2px"></div>
+    <div id="q-rank-label" style="font-size:1.05rem;font-weight:700"></div>
+    <div id="q-rank-pts" style="font-size:1.4rem;font-weight:900;color:#f9ca24"></div>
+    <div id="q-rank-pos" style="font-size:0.9rem;color:#c084fc;margin-top:2px"></div>
+  </div>
+
   <div class="q-text" id="q-text"></div>
   <div class="options-grid">
     <button class="opt-btn opt-a" id="opt-0" onclick="submitAnswer(0)"></button>
@@ -302,6 +311,7 @@ socket.on('question_start', data => {
   revealTimers.forEach(t => clearTimeout(t));
   revealTimers = [];
   currentAnswer = null;
+  document.getElementById('q-rank-banner').style.display = 'none';
   show('s-question');
   document.getElementById('q-progress').textContent = `${data.index + 1} / ${data.total}`;
   document.getElementById('q-text').textContent = data.text;
@@ -346,38 +356,40 @@ socket.on('question_reveal', ({ correctIndex, leaderboard, isLast }) => {
   const isCorrect = currentAnswer !== null && currentAnswer === correctIndex;
   const didAnswer = currentAnswer !== null;
 
-  // 顯示正確/錯誤
+  // 標示正確/錯誤選項
   document.querySelectorAll('.opt-btn').forEach((b, i) => {
     b.classList.add('disabled');
     if (i === correctIndex) b.classList.add('correct');
     else if (i === currentAnswer) b.classList.add('wrong');
   });
 
+  // 短暫等 your_rank 到位，再顯示橫幅
   const t1 = setTimeout(() => {
-    document.getElementById('result-emoji').textContent =
+    const banner = document.getElementById('q-rank-banner');
+    document.getElementById('q-rank-emoji').textContent =
       isCorrect ? '🎉' : (didAnswer ? '😅' : '⏰');
-    document.getElementById('result-label').textContent =
-      isCorrect ? '答對了！' : (didAnswer ? '答錯了！' : '時間到了！');
-    document.getElementById('result-pts').textContent =
-      myLastPts > 0 ? `+${myLastPts.toLocaleString()} 分` : '';
-    document.getElementById('result-total').textContent =
-      `目前總分：${myScore.toLocaleString()} 分`;
-    document.getElementById('result-rank').textContent =
-      myRank > 0 ? `目前排名：第 ${myRank} 名 ／ 共 ${myRankTotal} 人` : '';
-    show('s-result');
+    document.getElementById('q-rank-label').textContent =
+      isCorrect ? '答對了！' : (didAnswer ? '答錯了！' : '時間到！');
+    document.getElementById('q-rank-pts').textContent =
+      myLastPts > 0 ? `+${myLastPts.toLocaleString()} 分` : '沒得分';
+    document.getElementById('q-rank-pos').textContent =
+      myRank > 0 ? `目前第 ${myRank} 名 ／ 共 ${myRankTotal} 人` : '';
+    banner.style.display = 'block';
 
+    // 3 秒後切到大排名畫面
     const t2 = setTimeout(() => {
+      banner.style.display = 'none';
       const medals = ['🥇','🥈','🥉'];
-      document.getElementById('lb-medal').textContent = myRank <= 3 ? medals[myRank-1] : '🏅';
+      document.getElementById('lb-medal').textContent = myRank > 0 && myRank <= 3 ? medals[myRank-1] : '🏅';
       document.getElementById('lb-rank-num').textContent = myRank > 0 ? myRank : '-';
       document.getElementById('lb-rank-total').textContent = myRankTotal > 0 ? `共 ${myRankTotal} 人` : '';
       document.getElementById('lb-score-display').textContent = myScore > 0 ? `總分 ${myScore.toLocaleString()} 分` : '';
       document.getElementById('lb-status').textContent =
         isLast ? '最後一題！準備揭曉最終結果...' : '等待下一題...';
       show('s-leaderboard');
-    }, 2500);
+    }, 3000);
     revealTimers.push(t2);
-  }, 1800);
+  }, 400);
   revealTimers.push(t1);
 });
 
