@@ -114,6 +114,12 @@ body {
 
 <!-- 題目 -->
 <div class="screen" id="s-question">
+  <!-- 答案揭曉後的排行橫幅 -->
+  <div id="sc-lb-banner" style="display:none;width:100%;margin-bottom:18px">
+    <div class="lb-title" style="margin-bottom:16px">🏆 目前排行</div>
+    <div class="lb-grid" id="sc-lb-inline"></div>
+  </div>
+
   <div class="q-header">
     <div class="q-badge" id="sc-q-badge">第 1 題</div>
     <div class="q-timer" id="sc-timer">20</div>
@@ -192,6 +198,7 @@ socket.on('game_starting', ({ countdown }) => {
 
 socket.on('question_start', data => {
   show('s-question');
+  document.getElementById('sc-lb-banner').style.display = 'none';
   document.getElementById('sc-q-badge').textContent = `第 ${data.index+1} 題 ／ 共 ${data.total} 題`;
   document.getElementById('sc-q-text').textContent = data.text;
   document.getElementById('sc-ans-prog').textContent = '';
@@ -228,12 +235,9 @@ socket.on('question_reveal', ({ correctIndex, leaderboard }) => {
     if (i === correctIndex) el.classList.add('highlight');
     else el.classList.add('dim');
   });
-
-  // 3 秒後切排行榜
-  setTimeout(() => {
-    renderLB(leaderboard, 'sc-lb-grid');
-    show('s-leaderboard');
-  }, 3000);
+  // 排行榜直接顯示在題目畫面上方，不切換頁面
+  renderLB(leaderboard, 'sc-lb-inline');
+  document.getElementById('sc-lb-banner').style.display = 'block';
 });
 
 socket.on('game_over', ({ leaderboard }) => {
