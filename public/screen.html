@@ -97,15 +97,15 @@ body {
 #s-gameover { text-align: center; }
 .go-title { font-size: 4rem; font-weight: 800; margin-bottom: 28px; }
 #sc-final-grid {
-  display: flex; flex-direction: column; gap: 14px;
-  max-width: 700px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  max-width: 1000px; margin: 0 auto;
 }
 #sc-final-grid .lb-row {
   flex: none; max-width: none;
-  font-size: 1.6rem; padding: 20px 28px; border-radius: 16px;
+  font-size: 1.25rem; padding: 14px 20px; border-radius: 14px;
 }
-#sc-final-grid .lb-rank { font-size: 2rem; min-width: 52px; }
-#sc-final-grid .lb-score { font-size: 1.6rem; }
+#sc-final-grid .lb-rank { font-size: 1.5rem; min-width: 42px; }
+#sc-final-grid .lb-score { font-size: 1.2rem; }
 
 /* ── 答案揭曉：左右並排 ── */
 #s-question.reveal-mode { display: flex !important; flex-direction: row; align-items: flex-start; gap: 28px; }

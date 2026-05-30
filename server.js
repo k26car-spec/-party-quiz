@@ -226,7 +226,7 @@ io.on('connection', (socket) => {
       sendQuestion();
     } else {
       state.phase = 'finished';
-      io.emit('game_over', { leaderboard: getLeaderboard(6) });
+      io.emit('game_over', { leaderboard: getLeaderboard(10) });
     }
   });
 
