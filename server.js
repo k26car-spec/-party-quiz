@@ -17,6 +17,17 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 app.use(express.json());
 
+let progressDebounce = null;
+function broadcastProgress() {
+  if (progressDebounce) return;
+  progressDebounce = setTimeout(() => {
+    progressDebounce = null;
+    const answered = Object.values(state.players).filter(x => x.answer !== null).length;
+    const total = Object.keys(state.players).length;
+    io.emit('answer_progress', { answered, total });
+  }, 300);
+}
+
 let state = {
   phase: 'lobby',
   questions: [],
@@ -178,10 +189,10 @@ io.on('connection', (socket) => {
     p.score += points;
     socket.emit('answer_result', { isCorrect, points, score: p.score });
 
+    broadcastProgress();
+
     const answered = Object.values(state.players).filter(x => x.answer !== null).length;
     const total = Object.keys(state.players).length;
-    io.emit('answer_progress', { answered, total });
-
     if (answered >= total) {
       if (state.timer) clearTimeout(state.timer);
       state.timer = setTimeout(revealAnswer, 1500);
