@@ -185,10 +185,19 @@ input[type="text"]:focus { border-color: #e056fd; }
 <script>
 const socket = io();
 let rosterMode = false;
-socket.on('connect', () => {
+function tryRejoin() {
   const savedName = localStorage.getItem('pq-name');
   const savedId   = localStorage.getItem('pq-studentId');
   if (savedName) socket.emit('player_join', { name: savedName, studentId: savedId || '' });
+}
+socket.on('connect', tryRejoin);
+
+// 手機螢幕亮回來時重連
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (!socket.connected) socket.connect();
+    else tryRejoin();
+  }
 });
 socket.on('roster_active', (active) => {
   rosterMode = active;

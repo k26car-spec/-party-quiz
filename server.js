@@ -17,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 app.use(express.json());
 
+const disconnectTimers = {};
 let progressDebounce = null;
 function broadcastProgress() {
   if (progressDebounce) return;
@@ -123,12 +124,15 @@ io.on('connection', (socket) => {
     const existing = Object.entries(state.players).find(([, p]) => p.name === n && n !== '');
     if (existing) {
       const [oldSid, playerData] = existing;
+      if (disconnectTimers[oldSid]) {
+        clearTimeout(disconnectTimers[oldSid]);
+        delete disconnectTimers[oldSid];
+      }
       delete state.players[oldSid];
-      state.players[socket.id] = { ...playerData, answer: null };
+      state.players[socket.id] = { ...playerData };
       socket.emit('join_ok', { name: n, score: state.players[socket.id].score });
       broadcastPlayerCount();
-      const syncData = buildSyncData();
-      socket.emit('player_sync', syncData);
+      socket.emit('player_sync', buildSyncData());
       return;
     }
 
@@ -260,10 +264,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    if (state.players[socket.id]) {
+    if (!state.players[socket.id]) return;
+    // 給 30 秒寬限，讓手機螢幕關掉後重新連線
+    disconnectTimers[socket.id] = setTimeout(() => {
       delete state.players[socket.id];
+      delete disconnectTimers[socket.id];
       broadcastPlayerCount();
-    }
+    }, 30000);
   });
 });
 
