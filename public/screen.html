@@ -266,13 +266,19 @@ function show(id) {
   document.getElementById(id).classList.add('active');
 }
 
+function maskName(name) {
+  if (!name || name.length <= 1) return name;
+  if (name.length === 2) return name[0] + '*';
+  return name[0] + '*'.repeat(name.length - 2) + name[name.length - 1];
+}
+
 function renderLB(lb, gridId) {
   const medals = ['🥇','🥈','🥉'];
   const topCls = ['r1','r2','r3'];
   document.getElementById(gridId).innerHTML = lb.map((item, i) =>
     `<div class="lb-row ${topCls[i]||''}">
       <span class="lb-rank">${i < 3 ? medals[i] : item.rank}</span>
-      <span class="lb-name">${item.name}</span>
+      <span class="lb-name">${maskName(item.name)}</span>
       <span class="lb-score">${item.score.toLocaleString()}</span>
     </div>`
   ).join('');
