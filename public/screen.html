@@ -211,15 +211,18 @@ function getAudio() {
 }
 document.addEventListener('click', () => getAudio(), { once: true });
 
-function note(ctx, freq, vol, at, dur, type = 'triangle') {
+function note(ctx, freq, vol, at, dur) {
   const osc = ctx.createOscillator();
+  const filter = ctx.createBiquadFilter();
   const g = ctx.createGain();
-  osc.connect(g); g.connect(ctx.destination);
-  osc.type = type;
+  osc.connect(filter); filter.connect(g); g.connect(ctx.destination);
+  osc.type = 'sine';
   osc.frequency.value = freq;
+  filter.type = 'lowpass';
+  filter.frequency.value = Math.min(freq * 2.5, 1800); // 柔化高頻
   g.gain.setValueAtTime(0, at);
-  g.gain.linearRampToValueAtTime(vol, at + 0.02);
-  g.gain.setValueAtTime(vol * 0.7, at + dur * 0.5);
+  g.gain.linearRampToValueAtTime(vol, at + 0.025);
+  g.gain.setValueAtTime(vol * 0.6, at + dur * 0.6);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
   osc.start(at); osc.stop(at + dur + 0.06);
   scheduledNodes.push(osc);
@@ -262,14 +265,15 @@ function startCountdownSound(duration, startTime) {
 
       const freq = soundState.melody[soundState.beatIdx % soundState.melody.length];
       if (timeLeft <= 5) {
-        note(ctx, freq * 2,   0.75, t,                     beat * 0.35, 'square');
-        note(ctx, freq * 1.5, 0.5,  t + beat * 0.5,        beat * 0.25, 'square');
+        // 最後 5 秒：稍高音調 + 雙拍，但維持柔和
+        note(ctx, freq * 1.25, 0.45, t,              beat * 0.3);
+        note(ctx, freq,        0.3,  t + beat * 0.5, beat * 0.2);
       } else if (timeLeft <= 10) {
-        note(ctx, freq * 1.5, 0.5, t, beat * 0.55, 'sawtooth');
-        note(ctx, freq / 4,   0.2, t, beat * 0.4,  'sine');
+        note(ctx, freq * 1.1, 0.35, t, beat * 0.5);
+        note(ctx, freq / 3,   0.15, t, beat * 0.4);
       } else {
-        note(ctx, freq,     0.38, t, beat * 0.65, 'triangle');
-        note(ctx, freq / 4, 0.18, t, beat * 0.5,  'sine');
+        note(ctx, freq,     0.28, t, beat * 0.6);
+        note(ctx, freq / 3, 0.12, t, beat * 0.5);
       }
       soundState.nextBeatTime += beat;
       soundState.beatIdx++;
@@ -287,7 +291,7 @@ function playRevealSound() {
   const now = ctx.currentTime;
   // 上升四音和弦（C E G C）
   [523, 659, 784, 1047].forEach((f, i) =>
-    note(ctx, f, 0.45, now + i * 0.08, 0.25, 'triangle')
+    note(ctx, f, 0.35, now + i * 0.09, 0.28)
   );
 }
 
