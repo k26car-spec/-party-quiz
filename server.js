@@ -25,7 +25,7 @@ function broadcastProgress() {
     const answered = Object.values(state.players).filter(x => x.answer !== null).length;
     const total = Object.keys(state.players).length;
     io.emit('answer_progress', { answered, total });
-  }, 300);
+  }, 100);
 }
 
 let state = {

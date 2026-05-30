@@ -225,43 +225,59 @@ function note(ctx, freq, vol, at, dur, type = 'triangle') {
   scheduledNodes.push(osc);
 }
 
+let soundTimer = null;
+let soundState = null;
+
 function stopSound() {
+  if (soundTimer) { clearInterval(soundTimer); soundTimer = null; }
   scheduledNodes.forEach(n => { try { n.stop(0); } catch(e) {} });
   scheduledNodes = [];
+  soundState = null;
 }
 
 function startCountdownSound(duration, startTime) {
   if (!audioCtx) return;
   stopSound();
+  const melody = [523, 392, 659, 523, 784, 659, 523, 392];
+  const beat = 60 / 132;
+  soundState = { startTime, duration, beatIdx: 0, nextBeatTime: null, melody, beat };
+
+  // 計算第一個 beat 的時間
   const ctx = audioCtx;
   const elapsed = (Date.now() - startTime) / 1000;
   const remaining = Math.max(0, duration - elapsed);
-  const now = ctx.currentTime;
+  const beatsGone = Math.floor(elapsed / beat);
+  soundState.beatIdx = beatsGone;
+  soundState.nextBeatTime = ctx.currentTime + (beat - (elapsed % beat));
 
-  // Kahoot 風格：五聲音階旋律 + 低頻節拍，BPM 132
-  const melody = [523, 392, 659, 523, 784, 659, 523, 392]; // C5 G4 E5 C5 G5 E5 C5 G4
-  const beat = 60 / 132; // ~0.455s
-  const totalBeats = Math.floor(remaining / beat);
-  const startOffset = remaining - totalBeats * beat;
+  function scheduleLookahead() {
+    if (!soundState || !audioCtx) return;
+    const ctx = audioCtx;
+    const lookahead = 0.3;
 
-  for (let i = 0; i < totalBeats; i++) {
-    const t = now + startOffset + i * beat;
-    if (t <= now) continue;
-    const timeLeft = remaining - startOffset - i * beat;
-    const freq = melody[i % melody.length];
+    while (soundState.nextBeatTime < ctx.currentTime + lookahead) {
+      const t = soundState.nextBeatTime;
+      const timeLeft = soundState.startTime / 1000 + soundState.duration - Date.now() / 1000 + (t - ctx.currentTime);
+      if (timeLeft < 0) { stopSound(); return; }
 
-    if (timeLeft <= 5) {
-      // 最後 5 秒：速度加倍、音調升高、方波（更刺激）
-      note(ctx, freq * 2,   0.75, t,            beat * 0.35, 'square');
-      note(ctx, freq * 1.5, 0.5,  t + beat * 0.5, beat * 0.25, 'square');
-    } else if (timeLeft <= 10) {
-      note(ctx, freq * 1.5, 0.5, t, beat * 0.55, 'sawtooth');
-      note(ctx, freq / 4,   0.2, t, beat * 0.4,  'sine');     // 低頻節拍
-    } else {
-      note(ctx, freq,     0.38, t, beat * 0.65, 'triangle');
-      note(ctx, freq / 4, 0.18, t, beat * 0.5,  'sine');      // 低頻節拍
+      const freq = soundState.melody[soundState.beatIdx % soundState.melody.length];
+      if (timeLeft <= 5) {
+        note(ctx, freq * 2,   0.75, t,                     beat * 0.35, 'square');
+        note(ctx, freq * 1.5, 0.5,  t + beat * 0.5,        beat * 0.25, 'square');
+      } else if (timeLeft <= 10) {
+        note(ctx, freq * 1.5, 0.5, t, beat * 0.55, 'sawtooth');
+        note(ctx, freq / 4,   0.2, t, beat * 0.4,  'sine');
+      } else {
+        note(ctx, freq,     0.38, t, beat * 0.65, 'triangle');
+        note(ctx, freq / 4, 0.18, t, beat * 0.5,  'sine');
+      }
+      soundState.nextBeatTime += beat;
+      soundState.beatIdx++;
     }
   }
+
+  scheduleLookahead();
+  soundTimer = setInterval(scheduleLookahead, 100);
 }
 
 function playRevealSound() {
