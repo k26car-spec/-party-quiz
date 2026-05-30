@@ -118,8 +118,12 @@ textarea { resize: none; }
   <!-- 一鍵載入預設題目 -->
   <div class="card" style="margin-bottom:16px">
     <h2>快速載入</h2>
-    <button class="btn btn-purple" onclick="loadPreset()">🎉 一鍵載入歡送會 15 題</button>
-    <span style="font-size:0.8rem;opacity:0.5;margin-left:10px">點完記得按「💾 儲存並更新」</span>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn btn-purple" onclick="loadPreset()">🎉 歡送會基本 15 題</button>
+      <button class="btn btn-purple" onclick="loadInteractive()">🧠 互動趣味 15 題</button>
+      <button class="btn btn-purple" onclick="loadBlessings()">💛 祝福傳承 15 題</button>
+    </div>
+    <span style="font-size:0.8rem;opacity:0.5">點完記得按「💾 儲存並更新」</span>
   </div>
 
   <!-- 匯入玩家名單 -->
@@ -282,11 +286,61 @@ const PRESET_QUESTIONS = [
   { text: "對即將畢業的同學來說，最適合的一句資訊管理式祝福是？", options: ["願你的人生資料永遠完整備份", "願你的職涯系統穩定擴充", "願你的決策都有高品質資料支援", "以上都是，並且持續最佳化"], correctIndex: 3 },
 ];
 
+const INTERACTIVE_QUESTIONS = [
+  { text: "資管職碩生最常見的「系統錯誤」是？", options: ["腦袋 404 Not Found", "Wi-Fi 斷線", "Excel 當掉", "投影機找不到訊號"], correctIndex: 0 },
+  { text: "如果職碩生活是一套 ERP，最難整合的是哪個模組？", options: ["課業模組", "工作模組", "睡眠模組", "家庭模組"], correctIndex: 2 },
+  { text: "下列哪一個最像職碩生的「資料備份策略」？", options: ["存在電腦", "傳給最可靠的組員，然後大家都找他", "存在雲端", "傳到群組"], correctIndex: 1 },
+  { text: "資管職碩班最常見的「專案管理工具」其實是？", options: ["Trello", "LINE 群組裡的「已讀」壓力", "Jira", "Asana"], correctIndex: 1 },
+  { text: "如果教授是資料庫，學生最常下的查詢語句是？", options: ["SELECT 可以晚點交嗎 FROM 老師", "SELECT * FROM 分數", "SELECT * FROM 考試範圍", "SELECT * FROM 作業期限"], correctIndex: 0 },
+  { text: "職碩生最強的 AI Prompt 通常是？", options: ["請幫我整理文獻", "請幫我做摘要", "請幫我把「還沒開始」包裝成「目前正在規劃中」", "請幫我翻譯成英文"], correctIndex: 2 },
+  { text: "下列哪個最符合「敏捷開發」在職碩班的真實精神？", options: ["每週固定 Sprint", "Deadline 前一天，全組突然變敏捷", "每天站立會議", "持續交付價值"], correctIndex: 1 },
+  { text: "資管職碩生最常用的「雲端運算」是？", options: ["AWS", "Google Cloud", "老師還沒點名，趕快雲端連線進教室", "Azure"], correctIndex: 2 },
+  { text: "下列哪一項最像職碩班的「風險管理」？", options: ["先問：「大家這週有空嗎？」然後沒人回", "先排進度", "先開共用資料夾", "先分工"], correctIndex: 0 },
+  { text: "如果同學群組是一個資訊系統，最重要的功能是？", options: ["檔案共享", "即時通知", "在教授宣布作業後，集體沉默 3 分鐘", "權限管理"], correctIndex: 2 },
+  { text: "職碩生最常見的「版本控管」是？", options: ["GitHub", "GitLab", "SVN", "報告_final、報告_final2、報告_真的最終版、報告_拜託用這版"], correctIndex: 3 },
+  { text: "畢業後最想升級的人生系統功能是？", options: ["自動加薪", "自動準時下班", "自動睡滿 8 小時", "自動拒絕不合理需求"], correctIndex: 0 },
+  { text: "資管職碩生最像哪一種資料庫？", options: ["關聯式資料庫，資料整齊到不行", "NoSQL 資料庫，什麼格式都能塞", "壓力越大，資料越亂的資料庫", "雲端資料庫，永遠在線"], correctIndex: 2 },
+  { text: "下列哪個最像職碩班的「數位轉型」？", options: ["紙本改電子檔", "原本用腦記，後來改成全部丟到 LINE 群組搜尋", "人工流程改系統流程", "資料驅動決策"], correctIndex: 1 },
+  { text: "對畢業生最適合的資管式祝福是？", options: ["願你的人生系統永不當機", "願你的職涯資料永遠正規化", "願你未來的老闆都比教授好溝通", "願你的薪水持續版本更新"], correctIndex: 3 },
+];
+
+const BLESSING_QUESTIONS = [
+  { text: "學弟妹送給畢業學長姐最實用的祝福是什麼？", options: ["祝你以後開會都坐在最遠角落", "祝你未來薪水穩定成長，壓力穩定下降", "祝你每天都有新作業", "祝你再回來修同一門課"], correctIndex: 1 },
+  { text: "學長姐畢業後，最可能留給學弟妹的「珍貴資產」是什麼？", options: ["課本", "水壺", "報告範本、修課心得與避雷經驗", "一句「你們加油」然後瀟灑離開"], correctIndex: 2 },
+  { text: "如果學長姐的人生即將進入下一關，學弟妹最該送上的一句話是？", options: ["祝你下一關少一點加班，多一點掌聲", "祝你下一關怪物更多", "祝你下一關沒有補血點", "祝你下一關主管每天改需求"], correctIndex: 0 },
+  { text: "學弟妹最想從學長姐身上繼承的能力是？", options: ["半夜還能交出報告的生存力", "上課完全不累的超能力", "永遠不用看群組的勇氣", "不用討論就知道老師要什麼的神通"], correctIndex: 0 },
+  { text: "歡送會上，學長姐最適合傳承給學弟妹的一句話是？", options: ["「每份報告都要提早一個月開始。」", "「你現在覺得很忙，之後會發現真的很忙。」", "「遇到困難不要怕，先開共用文件。」", "「老師說簡單，通常不是真的簡單。」"], correctIndex: 3 },
+  { text: "如果把學長姐比喻成導航，對學弟妹最大的幫助是什麼？", options: ["告訴你哪條路最塞", "告訴你哪裡有測速照相", "告訴你哪門課、哪份報告、哪個期限最需要提前準備", "告訴你目的地很遠，然後自己先下車"], correctIndex: 2 },
+  { text: "學弟妹在歡送會最想偷偷問學長姐的問題是？", options: ["「真的可以順利畢業嗎？」", "「哪份作業最可怕？」", "「老師說的『簡單報告』到底多不簡單？」", "以上都想問，但不敢一次問完"], correctIndex: 3 },
+  { text: "學長姐畢業後，學弟妹最希望他們不要忘記什麼？", options: ["同學情誼", "回來請吃飯", "當初一起趕報告的革命情感", "以上都不要忘，尤其是請吃飯"], correctIndex: 3 },
+  { text: "如果學弟妹要送學長姐一個「畢業後專用技能」，哪個最實用？", options: ["自動避開無效會議", "自動記得交報告", "自動打開學校系統", "自動收到作業提醒"], correctIndex: 0 },
+  { text: "學長姐對學弟妹最溫暖的祝福應該是？", options: ["祝你們每一次努力，都能慢慢變成自己的底氣", "祝你們每週都有新任務", "祝你們所有報告都壓線完成", "祝你們群組永遠 999+"], correctIndex: 0 },
+  { text: "學弟妹對學長姐最真心、也最現實的祝福是？", options: ["祝你永遠不用再上課", "祝你升遷順利，然後不要忘記提拔學弟妹", "祝你忘記所有作業", "祝你以後開會比上課還久"], correctIndex: 1 },
+  { text: "如果把這場歡送會當成「交接儀式」，最該交接的是什麼？", options: ["教室鑰匙", "課堂座位", "生存經驗、報告技巧與互相支援的精神", "咖啡店外送名單"], correctIndex: 2 },
+  { text: "學長姐畢業後，學弟妹最希望收到哪種訊息？", options: ["「我已經成功畢業，你們也可以。」", "「我又報名一門課了。」", "「我把以前的作業都刪掉了。」", "「我忘記怎麼寫報告了。」"], correctIndex: 0 },
+  { text: "歡送學長姐時，最適合全場一起喊的祝福是？", options: ["一路順風、前程似錦、記得回來看我們", "報告再多也不怕", "老師點名都不怕", "Deadline 永遠追不上你"], correctIndex: 0 },
+  { text: "這場歡送會最重要的意義是什麼？", options: ["吃飯", "拍照", "讓學長姐帶著祝福出發，也讓學弟妹接住經驗繼續前進", "確認誰還沒繳費"], correctIndex: 2 },
+];
+
 function loadPreset() {
   if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;
   questions = PRESET_QUESTIONS.map(q => ({ ...q }));
   renderQuestions();
   toast('🎉 已載入 15 題歡送會題目！記得按儲存');
+}
+
+function loadInteractive() {
+  if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;
+  questions = INTERACTIVE_QUESTIONS.map(q => ({ ...q }));
+  renderQuestions();
+  toast('🧠 已載入 15 題互動趣味題！記得按儲存');
+}
+
+function loadBlessings() {
+  if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;
+  questions = BLESSING_QUESTIONS.map(q => ({ ...q }));
+  renderQuestions();
+  toast('💛 已載入 15 題祝福傳承題！記得按儲存');
 }
 
 function importRoster() {
