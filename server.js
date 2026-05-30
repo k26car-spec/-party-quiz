@@ -34,7 +34,7 @@ let state = {
   currentQ: -1,
   players: {},         // socketId -> { name, score, answer }
   startTime: null,
-  duration: 20,
+  duration: 10,
   timer: null,
   roster: {},          // { studentId: name }
 };
