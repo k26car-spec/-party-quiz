@@ -211,14 +211,15 @@ function getAudio() {
 }
 document.addEventListener('click', () => getAudio(), { once: true });
 
-function beep(ctx, freq, vol, at, dur) {
+function note(ctx, freq, vol, at, dur, type = 'triangle') {
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
   osc.connect(g); g.connect(ctx.destination);
-  osc.type = 'sine';
+  osc.type = type;
   osc.frequency.value = freq;
   g.gain.setValueAtTime(0, at);
-  g.gain.linearRampToValueAtTime(vol, at + 0.015);
+  g.gain.linearRampToValueAtTime(vol, at + 0.02);
+  g.gain.setValueAtTime(vol * 0.7, at + dur * 0.5);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
   osc.start(at); osc.stop(at + dur + 0.06);
   scheduledNodes.push(osc);
@@ -235,17 +236,30 @@ function startCountdownSound(duration, startTime) {
   const ctx = audioCtx;
   const elapsed = (Date.now() - startTime) / 1000;
   const remaining = Math.max(0, duration - elapsed);
+  const now = ctx.currentTime;
 
-  for (let i = Math.ceil(remaining); i >= 1; i--) {
-    const t = ctx.currentTime + (remaining - i);
-    if (t <= ctx.currentTime) continue;
-    if (i <= 5) {
-      beep(ctx, 900, 0.8, t, 0.12);
-      beep(ctx, 680, 0.55, t + 0.5, 0.09);
-    } else if (i <= 10) {
-      beep(ctx, 660, 0.45, t, 0.09);
+  // Kahoot 風格：五聲音階旋律 + 低頻節拍，BPM 132
+  const melody = [523, 392, 659, 523, 784, 659, 523, 392]; // C5 G4 E5 C5 G5 E5 C5 G4
+  const beat = 60 / 132; // ~0.455s
+  const totalBeats = Math.floor(remaining / beat);
+  const startOffset = remaining - totalBeats * beat;
+
+  for (let i = 0; i < totalBeats; i++) {
+    const t = now + startOffset + i * beat;
+    if (t <= now) continue;
+    const timeLeft = remaining - startOffset - i * beat;
+    const freq = melody[i % melody.length];
+
+    if (timeLeft <= 5) {
+      // 最後 5 秒：速度加倍、音調升高、方波（更刺激）
+      note(ctx, freq * 2,   0.75, t,            beat * 0.35, 'square');
+      note(ctx, freq * 1.5, 0.5,  t + beat * 0.5, beat * 0.25, 'square');
+    } else if (timeLeft <= 10) {
+      note(ctx, freq * 1.5, 0.5, t, beat * 0.55, 'sawtooth');
+      note(ctx, freq / 4,   0.2, t, beat * 0.4,  'sine');     // 低頻節拍
     } else {
-      beep(ctx, 440, 0.22, t, 0.07);
+      note(ctx, freq,     0.38, t, beat * 0.65, 'triangle');
+      note(ctx, freq / 4, 0.18, t, beat * 0.5,  'sine');      // 低頻節拍
     }
   }
 }
@@ -255,7 +269,10 @@ function playRevealSound() {
   stopSound();
   const ctx = audioCtx;
   const now = ctx.currentTime;
-  [523, 659, 784].forEach((f, i) => beep(ctx, f, 0.45, now + i * 0.09, 0.22));
+  // 上升四音和弦（C E G C）
+  [523, 659, 784, 1047].forEach((f, i) =>
+    note(ctx, f, 0.45, now + i * 0.08, 0.25, 'triangle')
+  );
 }
 
 let timerInterval = null;
