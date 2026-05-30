@@ -194,8 +194,8 @@ socket.on('roster_active', (active) => {
   rosterMode = active;
   const input = document.getElementById('nickname-input');
   const label = document.getElementById('join-label');
-  input.placeholder = active ? '請輸入學號' : '你的暱稱（最多 20 字）';
-  if (label) label.textContent = active ? '輸入學號加入遊戲' : '輸入暱稱，加入遊戲';
+  input.placeholder = active ? '請輸入學號或姓名' : '你的暱稱（最多 20 字）';
+  if (label) label.textContent = active ? '輸入學號或姓名加入遊戲' : '輸入暱稱，加入遊戲';
 });
 let myName = '';
 let myScore = 0;

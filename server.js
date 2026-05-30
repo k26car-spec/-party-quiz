@@ -137,11 +137,16 @@ io.on('connection', (socket) => {
     const hasRoster = Object.keys(state.roster).length > 0;
 
     if (hasRoster) {
-      if (!sid) { socket.emit('join_error', '請輸入學號'); return; }
+      if (!sid) { socket.emit('join_error', '請輸入學號或姓名'); return; }
+      // 先用學號查，查不到再用姓名查
       resolvedName = state.roster[sid];
-      if (!resolvedName) { socket.emit('join_error', `學號 ${sid} 不在名單中`); return; }
+      if (!resolvedName) {
+        const entry = Object.entries(state.roster).find(([, name]) => name === sid);
+        if (entry) resolvedName = entry[1];
+      }
+      if (!resolvedName) { socket.emit('join_error', `「${sid}」不在名單中`); return; }
       const alreadyIn = Object.values(state.players).find(p => p.name === resolvedName);
-      if (alreadyIn) { socket.emit('join_error', '此學號已加入遊戲'); return; }
+      if (alreadyIn) { socket.emit('join_error', '此帳號已加入遊戲'); return; }
     } else {
       resolvedName = n;
       if (!resolvedName) return;
