@@ -187,10 +187,76 @@ body {
   <div class="lb-grid" id="sc-final-grid"></div>
 </div>
 
+<div id="audio-hint" onclick="getAudio();this.style.display='none'" style="
+  position:fixed;bottom:18px;right:18px;z-index:200;
+  background:rgba(255,255,255,0.13);backdrop-filter:blur(6px);
+  padding:8px 18px;border-radius:30px;cursor:pointer;
+  font-size:0.85rem;color:#fff;user-select:none;
+  border:1px solid rgba(255,255,255,0.2);
+">🔊 點擊啟用音效</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 socket.emit('join_screen');
+
+// ── Web Audio 音效 ──
+let audioCtx = null;
+let scheduledNodes = [];
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+document.addEventListener('click', () => getAudio(), { once: true });
+
+function beep(ctx, freq, vol, at, dur) {
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.connect(g); g.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(0, at);
+  g.gain.linearRampToValueAtTime(vol, at + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  osc.start(at); osc.stop(at + dur + 0.06);
+  scheduledNodes.push(osc);
+}
+
+function stopSound() {
+  scheduledNodes.forEach(n => { try { n.stop(0); } catch(e) {} });
+  scheduledNodes = [];
+}
+
+function startCountdownSound(duration, startTime) {
+  if (!audioCtx) return;
+  stopSound();
+  const ctx = audioCtx;
+  const elapsed = (Date.now() - startTime) / 1000;
+  const remaining = Math.max(0, duration - elapsed);
+
+  for (let i = Math.ceil(remaining); i >= 1; i--) {
+    const t = ctx.currentTime + (remaining - i);
+    if (t <= ctx.currentTime) continue;
+    if (i <= 5) {
+      beep(ctx, 900, 0.8, t, 0.12);
+      beep(ctx, 680, 0.55, t + 0.5, 0.09);
+    } else if (i <= 10) {
+      beep(ctx, 660, 0.45, t, 0.09);
+    } else {
+      beep(ctx, 440, 0.22, t, 0.07);
+    }
+  }
+}
+
+function playRevealSound() {
+  if (!audioCtx) return;
+  stopSound();
+  const ctx = audioCtx;
+  const now = ctx.currentTime;
+  [523, 659, 784].forEach((f, i) => beep(ctx, f, 0.45, now + i * 0.09, 0.22));
+}
 
 let timerInterval = null;
 
@@ -263,6 +329,7 @@ socket.on('question_start', data => {
   }
   tick();
   timerInterval = setInterval(tick, 250);
+  startCountdownSound(data.duration, data.startTime);
 });
 
 socket.on('answer_progress', ({ answered, total }) => {
@@ -271,6 +338,7 @@ socket.on('answer_progress', ({ answered, total }) => {
 
 socket.on('question_reveal', ({ correctIndex, explanation, leaderboard }) => {
   if (timerInterval) clearInterval(timerInterval);
+  playRevealSound();
   // 標示正確/錯誤選項
   [0,1,2,3].forEach(i => {
     const el = document.getElementById(`sc-opt-${i}`);
@@ -294,7 +362,7 @@ socket.on('game_over', ({ leaderboard }) => {
   show('s-gameover');
 });
 
-socket.on('game_reset', () => show('s-lobby'));
+socket.on('game_reset', () => { stopSound(); show('s-lobby'); });
 </script>
 </body>
 </html>
