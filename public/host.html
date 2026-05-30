@@ -182,11 +182,17 @@ textarea { resize: none; }
 const socket = io();
 let questions = [];
 let phase = 'lobby';
+let playerCount = 0;
+
+function updateStartBtn() {
+  document.getElementById('btn-start').disabled = phase !== 'lobby' || playerCount === 0;
+}
 
 socket.on('connect', () => socket.emit('host_sync'));
-socket.on('host_state', ({ phase: p, currentQ, total, playerCount, rosterCount }) => {
+socket.on('host_state', ({ phase: p, currentQ, total, playerCount: pc, rosterCount }) => {
+  playerCount = pc;
   setPhase(p);
-  document.getElementById('p-count').textContent = playerCount;
+  document.getElementById('p-count').textContent = pc;
   if (currentQ >= 0 && total > 0)
     document.getElementById('q-prog-host').textContent = `第 ${currentQ+1} 題 ／ 共 ${total} 題`;
   const badge = document.getElementById('mode-badge');
@@ -220,8 +226,8 @@ function setPhase(p) {
   const [label, cls] = map[p] || ['等待中','ph-lobby'];
   tag.textContent = label;
   tag.className = 'phase-tag ' + cls;
-  document.getElementById('btn-start').disabled = p !== 'lobby';
   document.getElementById('btn-next').disabled  = p !== 'reveal';
+  updateStartBtn();
 }
 
 function renderQuestions() {
@@ -385,7 +391,11 @@ socket.on('roster_saved', n => {
   document.getElementById('mode-badge').style.background = n > 0 ? 'rgba(106,176,76,0.3)' : 'rgba(255,255,255,0.12)';
   toast(n > 0 ? `✅ 匯入 ${n} 位學生，已切換名單模式` : '已清除名單，回到匿名模式');
 });
-socket.on('player_count', n => document.getElementById('p-count').textContent = n);
+socket.on('player_count', n => {
+  playerCount = n;
+  document.getElementById('p-count').textContent = n;
+  updateStartBtn();
+});
 socket.on('game_starting', () => setPhase('starting'));
 socket.on('question_start', data => {
   setPhase('question');

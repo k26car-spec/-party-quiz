@@ -211,6 +211,7 @@ io.on('connection', (socket) => {
 
   socket.on('host_start', () => {
     if (state.questions.length === 0) return;
+    if (Object.keys(state.players).length === 0) return;
     Object.values(state.players).forEach(p => { p.score = 0; p.answer = null; });
     state.phase = 'starting';
     state.currentQ = 0;
