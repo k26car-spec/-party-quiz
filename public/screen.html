@@ -211,20 +211,40 @@ function getAudio() {
 }
 document.addEventListener('click', () => getAudio(), { once: true });
 
-function note(ctx, freq, vol, at, dur) {
+// 木琴（marimba）音色：基音 + 泛音疊加，快速衰減
+function marimba(ctx, freq, vol, at) {
+  const harmonics = [
+    { m: 1,    a: 1.0,  d: 0.55 },
+    { m: 2,    a: 0.35, d: 0.35 },
+    { m: 3,    a: 0.12, d: 0.22 },
+    { m: 4.08, a: 0.06, d: 0.15 }, // 輕微非諧波，marimba 特色
+  ];
+  harmonics.forEach(({ m, a, d }) => {
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = freq * m;
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol * a, at + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + d);
+    osc.start(at); osc.stop(at + d + 0.05);
+    scheduledNodes.push(osc);
+  });
+}
+
+// 低頻軟鼓（kick）
+function kick(ctx, vol, at) {
   const osc = ctx.createOscillator();
-  const filter = ctx.createBiquadFilter();
-  const g = ctx.createGain();
-  osc.connect(filter); filter.connect(g); g.connect(ctx.destination);
+  const g   = ctx.createGain();
+  osc.connect(g); g.connect(ctx.destination);
   osc.type = 'sine';
-  osc.frequency.value = freq;
-  filter.type = 'lowpass';
-  filter.frequency.value = Math.min(freq * 2.5, 1800); // 柔化高頻
+  osc.frequency.setValueAtTime(120, at);
+  osc.frequency.exponentialRampToValueAtTime(40, at + 0.08);
   g.gain.setValueAtTime(0, at);
-  g.gain.linearRampToValueAtTime(vol, at + 0.025);
-  g.gain.setValueAtTime(vol * 0.6, at + dur * 0.6);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  osc.start(at); osc.stop(at + dur + 0.06);
+  g.gain.linearRampToValueAtTime(vol, at + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.18);
+  osc.start(at); osc.stop(at + 0.22);
   scheduledNodes.push(osc);
 }
 
@@ -241,41 +261,44 @@ function stopSound() {
 function startCountdownSound(duration, startTime) {
   if (!audioCtx) return;
   stopSound();
-  const melody = [523, 392, 659, 523, 784, 659, 523, 392];
-  const beat = 60 / 132;
-  soundState = { startTime, duration, beatIdx: 0, nextBeatTime: null, melody, beat };
+  // C大調五聲音階：C5 E5 G5 A5 G5 E5 D5 C5
+  const melody = [523, 659, 784, 880, 784, 659, 587, 523];
+  const BPM    = 120;
+  const beat   = 60 / BPM; // 0.5s
 
-  // 計算第一個 beat 的時間
-  const ctx = audioCtx;
+  const ctx     = audioCtx;
   const elapsed = (Date.now() - startTime) / 1000;
-  const remaining = Math.max(0, duration - elapsed);
   const beatsGone = Math.floor(elapsed / beat);
-  soundState.beatIdx = beatsGone;
-  soundState.nextBeatTime = ctx.currentTime + (beat - (elapsed % beat));
+  soundState = {
+    startTime, duration, beat, melody,
+    beatIdx:      beatsGone,
+    nextBeatTime: ctx.currentTime + (beat - (elapsed % beat)),
+  };
 
   function scheduleLookahead() {
     if (!soundState || !audioCtx) return;
-    const ctx = audioCtx;
-    const lookahead = 0.3;
+    const ctx      = audioCtx;
+    const lookahead = 0.35;
 
     while (soundState.nextBeatTime < ctx.currentTime + lookahead) {
-      const t = soundState.nextBeatTime;
-      const timeLeft = soundState.startTime / 1000 + soundState.duration - Date.now() / 1000 + (t - ctx.currentTime);
+      const t       = soundState.nextBeatTime;
+      const timeLeft = (soundState.startTime / 1000 + soundState.duration) - Date.now() / 1000 + (t - ctx.currentTime);
       if (timeLeft < 0) { stopSound(); return; }
 
       const freq = soundState.melody[soundState.beatIdx % soundState.melody.length];
+      const b    = soundState.beatIdx;
+
       if (timeLeft <= 5) {
-        // 最後 5 秒：稍高音調 + 雙拍，但維持柔和
-        note(ctx, freq * 1.25, 0.45, t,              beat * 0.3);
-        note(ctx, freq,        0.3,  t + beat * 0.5, beat * 0.2);
-      } else if (timeLeft <= 10) {
-        note(ctx, freq * 1.1, 0.35, t, beat * 0.5);
-        note(ctx, freq / 3,   0.15, t, beat * 0.4);
+        // 最後 5 秒：加快雙拍（0.25s 一拍）
+        marimba(ctx, freq,       0.55, t);
+        marimba(ctx, freq * 1.2, 0.38, t + beat * 0.5);
+        kick(ctx, 0.35, t);
       } else {
-        note(ctx, freq,     0.28, t, beat * 0.6);
-        note(ctx, freq / 3, 0.12, t, beat * 0.5);
+        // 正常：每拍一個音符，偶數拍加 kick
+        marimba(ctx, freq, timeLeft <= 10 ? 0.48 : 0.38, t);
+        if (b % 2 === 0) kick(ctx, 0.25, t);
       }
-      soundState.nextBeatTime += beat;
+      soundState.nextBeatTime += (timeLeft <= 5 ? beat * 0.5 : beat);
       soundState.beatIdx++;
     }
   }
@@ -289,10 +312,8 @@ function playRevealSound() {
   stopSound();
   const ctx = audioCtx;
   const now = ctx.currentTime;
-  // 上升四音和弦（C E G C）
-  [523, 659, 784, 1047].forEach((f, i) =>
-    note(ctx, f, 0.35, now + i * 0.09, 0.28)
-  );
+  // 上升琶音 C-E-G-C
+  [523, 659, 784, 1047].forEach((f, i) => marimba(ctx, f, 0.5, now + i * 0.1));
 }
 
 let timerInterval = null;
