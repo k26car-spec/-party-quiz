@@ -95,8 +95,17 @@ body {
 
 /* ── Game Over ── */
 #s-gameover { text-align: center; }
-.go-title { font-size: 4.5rem; font-weight: 800; margin-bottom: 36px; }
-#s-gameover .lb-grid { max-width: 900px; margin: 0 auto; }
+.go-title { font-size: 4rem; font-weight: 800; margin-bottom: 28px; }
+#sc-final-grid {
+  display: flex; flex-direction: column; gap: 14px;
+  max-width: 700px; margin: 0 auto;
+}
+#sc-final-grid .lb-row {
+  flex: none; max-width: none;
+  font-size: 1.6rem; padding: 20px 28px; border-radius: 16px;
+}
+#sc-final-grid .lb-rank { font-size: 2rem; min-width: 52px; }
+#sc-final-grid .lb-score { font-size: 1.6rem; }
 
 /* ── 答案揭曉：左右並排 ── */
 #s-question.reveal-mode { display: flex !important; flex-direction: row; align-items: flex-start; gap: 28px; }
@@ -187,6 +196,7 @@ let timerInterval = null;
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-question').classList.remove('reveal-mode');
   document.getElementById(id).classList.add('active');
 }
 
