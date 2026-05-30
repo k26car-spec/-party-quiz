@@ -230,7 +230,7 @@ io.on('connection', (socket) => {
     state.currentQ = -1;
     state.startTime = null;
     state.timer = null;
-    Object.values(state.players).forEach(p => { p.score = 0; p.answer = null; });
+    state.players = {};
     io.emit('game_reset');
     broadcastPlayerCount();
   });
