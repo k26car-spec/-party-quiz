@@ -62,6 +62,17 @@ body {
 .opt-c { background: #f0b429; color: #222; }
 .opt-d { background: #6ab04c; }
 .ans-prog { text-align: center; margin-top: 18px; font-size: 1.1rem; opacity: 0.6; }
+.explanation-box {
+  display: none;
+  margin-top: 20px; padding: 16px 24px;
+  background: rgba(249,202,36,0.12);
+  border-left: 4px solid #f9ca24;
+  border-radius: 12px;
+  font-size: 1.45rem; line-height: 1.6; color: #fff;
+}
+.explanation-box .exp-label { font-size: 1rem; color: #f9ca24; font-weight: 700; margin-bottom: 6px; }
+.reveal-mode .explanation-box { font-size: 1.05rem; }
+.explanation-box.visible { display: block; }
 
 /* ── Leaderboard ── */
 #s-leaderboard { text-align: center; }
@@ -148,6 +159,10 @@ body {
       <div class="opt-block opt-d" id="sc-opt-3"><span class="opt-icon">🟢</span><span id="sc-txt-3"></span></div>
     </div>
     <div class="ans-prog" id="sc-ans-prog"></div>
+    <div class="explanation-box" id="sc-explanation">
+      <div class="exp-label">💡 解析</div>
+      <div id="sc-explanation-text"></div>
+    </div>
   </div>
 </div>
 
@@ -215,6 +230,7 @@ socket.on('game_starting', ({ countdown }) => {
 socket.on('question_start', data => {
   show('s-question');
   document.getElementById('sc-lb-banner').style.display = 'none';
+  document.getElementById('sc-explanation').classList.remove('visible');
   document.getElementById('s-question').classList.remove('reveal-mode');
   document.getElementById('sc-q-badge').textContent = `第 ${data.index+1} 題 ／ 共 ${data.total} 題`;
   document.getElementById('sc-q-text').textContent = data.text;
@@ -243,7 +259,7 @@ socket.on('answer_progress', ({ answered, total }) => {
   document.getElementById('sc-ans-prog').textContent = `${answered} / ${total} 人已作答`;
 });
 
-socket.on('question_reveal', ({ correctIndex, leaderboard }) => {
+socket.on('question_reveal', ({ correctIndex, explanation, leaderboard }) => {
   if (timerInterval) clearInterval(timerInterval);
   // 標示正確/錯誤選項
   [0,1,2,3].forEach(i => {
@@ -252,6 +268,11 @@ socket.on('question_reveal', ({ correctIndex, leaderboard }) => {
     if (i === correctIndex) el.classList.add('highlight');
     else el.classList.add('dim');
   });
+  // 顯示解析（若有）
+  if (explanation) {
+    document.getElementById('sc-explanation-text').textContent = explanation;
+    document.getElementById('sc-explanation').classList.add('visible');
+  }
   // 左側排行榜 + 右側題目，同一畫面呈現
   renderLB(leaderboard, 'sc-lb-inline');
   document.getElementById('sc-lb-banner').style.display = 'block';

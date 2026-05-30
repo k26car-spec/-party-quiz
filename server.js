@@ -86,6 +86,7 @@ function revealAnswer() {
 
   io.emit('question_reveal', {
     correctIndex: q.correctIndex,
+    explanation: q.explanation || '',
     leaderboard: top10,
     isLast: state.currentQ >= state.questions.length - 1,
   });

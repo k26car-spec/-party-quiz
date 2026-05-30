@@ -287,21 +287,21 @@ const PRESET_QUESTIONS = [
 ];
 
 const INTERACTIVE_QUESTIONS = [
-  { text: "資管職碩生最常見的「系統錯誤」是？", options: ["腦袋 404 Not Found", "Wi-Fi 斷線", "Excel 當掉", "投影機找不到訊號"], correctIndex: 0 },
-  { text: "如果職碩生活是一套 ERP，最難整合的是哪個模組？", options: ["課業模組", "工作模組", "睡眠模組", "家庭模組"], correctIndex: 2 },
-  { text: "下列哪一個最像職碩生的「資料備份策略」？", options: ["存在電腦", "傳給最可靠的組員，然後大家都找他", "存在雲端", "傳到群組"], correctIndex: 1 },
-  { text: "資管職碩班最常見的「專案管理工具」其實是？", options: ["Trello", "LINE 群組裡的「已讀」壓力", "Jira", "Asana"], correctIndex: 1 },
-  { text: "如果教授是資料庫，學生最常下的查詢語句是？", options: ["SELECT 可以晚點交嗎 FROM 老師", "SELECT * FROM 分數", "SELECT * FROM 考試範圍", "SELECT * FROM 作業期限"], correctIndex: 0 },
-  { text: "職碩生最強的 AI Prompt 通常是？", options: ["請幫我整理文獻", "請幫我做摘要", "請幫我把「還沒開始」包裝成「目前正在規劃中」", "請幫我翻譯成英文"], correctIndex: 2 },
-  { text: "下列哪個最符合「敏捷開發」在職碩班的真實精神？", options: ["每週固定 Sprint", "Deadline 前一天，全組突然變敏捷", "每天站立會議", "持續交付價值"], correctIndex: 1 },
-  { text: "資管職碩生最常用的「雲端運算」是？", options: ["AWS", "Google Cloud", "老師還沒點名，趕快雲端連線進教室", "Azure"], correctIndex: 2 },
-  { text: "下列哪一項最像職碩班的「風險管理」？", options: ["先問：「大家這週有空嗎？」然後沒人回", "先排進度", "先開共用資料夾", "先分工"], correctIndex: 0 },
-  { text: "如果同學群組是一個資訊系統，最重要的功能是？", options: ["檔案共享", "即時通知", "在教授宣布作業後，集體沉默 3 分鐘", "權限管理"], correctIndex: 2 },
-  { text: "職碩生最常見的「版本控管」是？", options: ["GitHub", "GitLab", "SVN", "報告_final、報告_final2、報告_真的最終版、報告_拜託用這版"], correctIndex: 3 },
-  { text: "畢業後最想升級的人生系統功能是？", options: ["自動加薪", "自動準時下班", "自動睡滿 8 小時", "自動拒絕不合理需求"], correctIndex: 0 },
-  { text: "資管職碩生最像哪一種資料庫？", options: ["關聯式資料庫，資料整齊到不行", "NoSQL 資料庫，什麼格式都能塞", "壓力越大，資料越亂的資料庫", "雲端資料庫，永遠在線"], correctIndex: 2 },
-  { text: "下列哪個最像職碩班的「數位轉型」？", options: ["紙本改電子檔", "原本用腦記，後來改成全部丟到 LINE 群組搜尋", "人工流程改系統流程", "資料驅動決策"], correctIndex: 1 },
-  { text: "對畢業生最適合的資管式祝福是？", options: ["願你的人生系統永不當機", "願你的職涯資料永遠正規化", "願你未來的老闆都比教授好溝通", "願你的薪水持續版本更新"], correctIndex: 3 },
+  { text: "資管職碩生最常見的「系統錯誤」是？", options: ["腦袋 404 Not Found", "Wi-Fi 斷線", "Excel 當掉", "投影機找不到訊號"], correctIndex: 0, explanation: "職碩生常常工作、上課、報告一起來，忙到腦袋直接找不到資料。" },
+  { text: "如果職碩生活是一套 ERP，最難整合的是哪個模組？", options: ["課業模組", "工作模組", "睡眠模組", "家庭模組"], correctIndex: 2, explanation: "工作、課業、家庭都要顧，最後最常被犧牲的就是睡眠。" },
+  { text: "下列哪一個最像職碩生的「資料備份策略」？", options: ["存在電腦", "傳給最可靠的組員，然後大家都找他", "存在雲端", "傳到群組"], correctIndex: 1, explanation: "最安全的備份不是雲端，是那位永遠找得到檔案的神隊友。" },
+  { text: "資管職碩班最常見的「專案管理工具」其實是？", options: ["Trello", "LINE 群組裡的「已讀」壓力", "Jira", "Asana"], correctIndex: 1, explanation: "比起正式工具，LINE 群組的已讀和提醒更有催進度的效果。" },
+  { text: "如果教授是資料庫，學生最常下的查詢語句是？", options: ["SELECT 可以晚點交嗎 FROM 老師", "SELECT * FROM 分數", "SELECT * FROM 考試範圍", "SELECT * FROM 作業期限"], correctIndex: 0, explanation: "這是學生最真實的心聲，尤其期限快到的時候最想查這個答案。" },
+  { text: "職碩生最強的 AI Prompt 通常是？", options: ["請幫我整理文獻", "請幫我做摘要", "請幫我把「還沒開始」包裝成「目前正在規劃中」", "請幫我翻譯成英文"], correctIndex: 2, explanation: "職碩生很懂專業表達，連進度落後都要講得很有策略感。" },
+  { text: "下列哪個最符合「敏捷開發」在職碩班的真實精神？", options: ["每週固定 Sprint", "Deadline 前一天，全組突然變敏捷", "每天站立會議", "持續交付價值"], correctIndex: 1, explanation: "真正的敏捷常常不是每天 Sprint，而是期限前戰鬥力突然爆發。" },
+  { text: "資管職碩生最常用的「雲端運算」是？", options: ["AWS", "Google Cloud", "老師還沒點名，趕快雲端連線進教室", "Azure"], correctIndex: 2, explanation: "這裡的雲端不是技術，而是人還沒到、靈魂先上線。" },
+  { text: "下列哪一項最像職碩班的「風險管理」？", options: ["先問：「大家這週有空嗎？」然後沒人回", "先排進度", "先開共用資料夾", "先分工"], correctIndex: 0, explanation: "分組最大的風險，往往不是題目太難，而是大家時間永遠對不上。" },
+  { text: "如果同學群組是一個資訊系統，最重要的功能是？", options: ["檔案共享", "即時通知", "在教授宣布作業後，集體沉默 3 分鐘", "權限管理"], correctIndex: 2, explanation: "這種沉默代表大家都收到訊息了，只是還在消化現實。" },
+  { text: "職碩生最常見的「版本控管」是？", options: ["GitHub", "GitLab", "SVN", "報告_final、報告_final2、報告_真的最終版、報告_拜託用這版"], correctIndex: 3, explanation: "這是最經典的學生版版本控管，每一版都說是最後一版。" },
+  { text: "畢業後最想升級的人生系統功能是？", options: ["自動加薪", "自動準時下班", "自動睡滿 8 小時", "自動拒絕不合理需求"], correctIndex: 0, explanation: "畢業後最希望努力能被看見，最實際的升級就是薪水也跟著升級。" },
+  { text: "資管職碩生最像哪一種資料庫？", options: ["關聯式資料庫，資料整齊到不行", "NoSQL 資料庫，什麼格式都能塞", "壓力越大，資料越亂的資料庫", "雲端資料庫，永遠在線"], correctIndex: 2, explanation: "平常還算有條理，但只要報告、工作、期末一起來，資料就開始失控。" },
+  { text: "下列哪個最像職碩班的「數位轉型」？", options: ["紙本改電子檔", "原本用腦記，後來改成全部丟到 LINE 群組搜尋", "人工流程改系統流程", "資料驅動決策"], correctIndex: 1, explanation: "這是最生活化的數位轉型，從靠記憶變成靠群組搜尋紀錄。" },
+  { text: "對畢業生最適合的資管式祝福是？", options: ["願你的人生系統永不當機", "願你的職涯資料永遠正規化", "願你未來的老闆都比教授好溝通", "願你的薪水持續版本更新"], correctIndex: 3, explanation: "用資管人的語言祝福畢業生，希望未來職涯越來越好，薪水也不斷升級。" },
 ];
 
 const BLESSING_QUESTIONS = [
