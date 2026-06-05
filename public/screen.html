@@ -13,6 +13,11 @@ body {
   display: flex; align-items: center; justify-content: center;
   padding: 40px; overflow: hidden;
 }
+body.show-gameover {
+  overflow-y: auto;
+  align-items: flex-start;
+  padding-top: 40px;
+}
 .screen { display: none; width: 100%; max-width: 1280px; }
 .screen.active { display: block; }
 
@@ -424,9 +429,10 @@ socket.on('question_reveal', ({ correctIndex, explanation, leaderboard }) => {
 socket.on('game_over', ({ leaderboard }) => {
   renderLB(leaderboard, 'sc-final-grid');
   show('s-gameover');
+  document.body.classList.add('show-gameover');
 });
 
-socket.on('game_reset', () => { stopSound(); show('s-lobby'); });
+socket.on('game_reset', () => { stopSound(); document.body.classList.remove('show-gameover'); show('s-lobby'); });
 </script>
 </body>
 </html>
