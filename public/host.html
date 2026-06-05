@@ -123,6 +123,7 @@ textarea { resize: none; }
       <button class="btn btn-purple" onclick="loadInteractive()">🧠 互動趣味 15 題</button>
       <button class="btn btn-purple" onclick="loadBlessings()">💛 祝福傳承 15 題</button>
       <button class="btn btn-purple" onclick="loadFireDrill()">🚒 防火演練 10 題</button>
+      <button class="btn btn-purple" onclick="loadEvacuation()">🔥 垂直平行逃生 30 題</button>
     </div>
     <span style="font-size:0.8rem;opacity:0.5">點完記得按「💾 儲存並更新」</span>
   </div>
@@ -341,6 +342,46 @@ const FIRE_DRILL_QUESTIONS = [
   { text: "看到小火源且環境安全時，哪一班可以進行初期滅火？", options: ["引導班", "通報班", "滅火班"], correctIndex: 2 },
   { text: "負責確認人員疏散方向，協助大家到安全集合地點的是哪一班？", options: ["通報班", "引導班", "滅火班"], correctIndex: 1 },
 ];
+
+const EVACUATION_QUESTIONS = [
+  { text: "火災時，若同樓層還有安全方向可移動，應先採取哪種避難方式？", options: ["水平避難／平行逃生", "搭乘電梯", "往頂樓跑"], correctIndex: 0 },
+  { text: "火災逃生觀念中，應該「先水平逃生，再＿＿＿逃生」？", options: ["原地", "垂直", "跳樓"], correctIndex: 1 },
+  { text: "垂直逃生主要是利用哪一種設施？", options: ["安全梯或疏散樓梯", "電梯", "廁所"], correctIndex: 0 },
+  { text: "垂直逃生時，正確方向通常是往哪裡？", options: ["往上", "往下", "往火源方向"], correctIndex: 1 },
+  { text: "火災時不建議往上跑，主要原因是什麼？", options: ["煙霧上升速度快，人跑不贏濃煙", "樓上比較暗", "樓上沒有水"], correctIndex: 0 },
+  { text: "起火層逃生時，最不應該使用哪一種設備？", options: ["安全梯", "電梯", "逃生出口"], correctIndex: 1 },
+  { text: "火災時搭乘電梯的危險是什麼？", options: ["可能斷電受困，也可能受濃煙影響", "電梯太慢", "電梯門太重"], correctIndex: 0 },
+  { text: "若樓梯間已經充滿濃煙，正確做法是什麼？", options: ["硬衝下樓", "改採平行逃生或退回室內避難", "搭電梯下樓"], correctIndex: 1 },
+  { text: "平行逃生是指往哪個方向尋找安全出口或避難空間？", options: ["同一樓層的水平方向", "一定往樓上", "一定往地下室"], correctIndex: 0 },
+  { text: "若房門外走道沒有濃煙，且逃生路線安全，應怎麼做？", options: ["依逃生路線往下、往外逃生", "回房間睡覺", "躲進浴室"], correctIndex: 0 },
+  { text: "若打開房門發現樓梯間有煙，應該怎麼做？", options: ["盲目往下衝", "改往沒有煙的水平方向尋找其他出口", "搭電梯比較快"], correctIndex: 1 },
+  { text: "進行逃生避難時，遇到濃煙應採取什麼姿勢？", options: ["低姿勢前進", "站直快跑", "邊跑邊喊"], correctIndex: 0 },
+  { text: "火場中沿著牆壁走的主要目的之一是什麼？", options: ["比較容易找到房門或安全門", "牆壁比較漂亮", "可以休息"], correctIndex: 0 },
+  { text: "視線不良時，沿牆壁移動有什麼好處？", options: ["增加方向感，較容易找到出口", "會讓火變小", "可以避免警報聲"], correctIndex: 0 },
+  { text: "逃生時應朝火流的哪個方向移動？", options: ["與火流反方向", "朝火源方向", "原地繞圈"], correctIndex: 0 },
+  { text: "開門逃生前，應先用什麼方式確認門外狀況？", options: ["用手背觸摸門把或門把底座溫度", "用腳踢門", "直接把門全打開"], correctIndex: 0 },
+  { text: "若門把很燙，代表門外可能有什麼危險？", options: ["高溫、火勢或濃煙", "外面很冷", "門鎖壞掉"], correctIndex: 0 },
+  { text: "若門把燙手或門外濃煙很多，應該怎麼做？", options: ["不要開門，退回室內關門避難", "立刻衝出去", "搭電梯離開"], correctIndex: 0 },
+  { text: "正確的開門方式是什麼？", options: ["躲在門後，先摸門把溫度，再輕開門縫查看", "直接把門大力打開", "站在門正前方開門"], correctIndex: 0 },
+  { text: "逃生或避難時，關門的主要作用是什麼？", options: ["阻隔火勢與濃煙蔓延", "讓房間變安靜", "避免別人進來"], correctIndex: 0 },
+  { text: "進入安全梯逃生時，應隨手關上什麼？", options: ["防火門", "電梯門", "櫃子門"], correctIndex: 0 },
+  { text: "隨手關上防火門的目的，是為了保護哪個空間？", options: ["樓梯間", "停車場", "廚房"], correctIndex: 0 },
+  { text: "若濃煙已進入樓梯間，應避免什麼行為？", options: ["硬衝濃煙下樓", "退回相對安全空間", "撥打 119 求救"], correctIndex: 0 },
+  { text: "關門避難時，可以用衣物塞住哪裡，減少濃煙進入？", options: ["門縫", "天花板", "電梯按鈕"], correctIndex: 0 },
+  { text: "關門避難後，應撥打 119 告知什麼？", options: ["明確受困位置", "自己的午餐內容", "電視節目名稱"], correctIndex: 0 },
+  { text: "火災時，以下哪一項屬於錯誤逃生行為？", options: ["為了拿財物而延誤逃生", "沿牆壁找出口", "低姿勢避開濃煙"], correctIndex: 0 },
+  { text: "火場逃生「三不原則」中，以下哪一項是正確的？", options: ["不搭電梯", "一定要往上跑", "先收拾財物"], correctIndex: 0 },
+  { text: "樓梯間濃煙密布時，較建議怎麼做？", options: ["關起房門，尋找窗口呼救或第二逃生出口", "直接衝進濃煙", "搭電梯"], correctIndex: 0 },
+  { text: "在安全梯內，看到安全門上有開關，通常可能代表什麼？", options: ["可能已到一樓或避難層出口", "一定是頂樓", "一定是倉庫"], correctIndex: 0 },
+  { text: "以下哪一項最符合火災逃生的正確觀念？", options: ["先避難求生，再視情況撤離逃生", "先拿財物，再慢慢逃生", "一律往頂樓跑"], correctIndex: 0 },
+];
+
+function loadEvacuation() {
+  if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;
+  questions = EVACUATION_QUESTIONS.map(q => ({ ...q }));
+  renderQuestions();
+  toast('🔥 已載入 30 題垂直平行逃生！記得按儲存');
+}
 
 function loadFireDrill() {
   if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;
