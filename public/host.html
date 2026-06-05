@@ -122,6 +122,7 @@ textarea { resize: none; }
       <button class="btn btn-purple" onclick="loadPreset()">🎉 歡送會基本 15 題</button>
       <button class="btn btn-purple" onclick="loadInteractive()">🧠 互動趣味 15 題</button>
       <button class="btn btn-purple" onclick="loadBlessings()">💛 祝福傳承 15 題</button>
+      <button class="btn btn-purple" onclick="loadFireDrill()">🚒 防火演練 10 題</button>
     </div>
     <span style="font-size:0.8rem;opacity:0.5">點完記得按「💾 儲存並更新」</span>
   </div>
@@ -327,6 +328,26 @@ const BLESSING_QUESTIONS = [
   { text: "歡送學長姐時，最適合全場一起喊的祝福是？", options: ["一路順風、前程似錦、記得回來看我們", "報告再多也不怕", "老師點名都不怕", "Deadline 永遠追不上你"], correctIndex: 0 },
   { text: "這場歡送會最重要的意義是什麼？", options: ["吃飯", "拍照", "讓學長姐帶著祝福出發，也讓學弟妹接住經驗繼續前進", "確認誰還沒繳費"], correctIndex: 2 },
 ];
+
+const FIRE_DRILL_QUESTIONS = [
+  { text: "發現火災時，負責撥打 119 報警的是哪一班？", options: ["通報班", "滅火班", "引導班"], correctIndex: 0 },
+  { text: "負責通知主管、廣播或聯絡相關人員的是哪一班？", options: ["引導班", "通報班", "滅火班"], correctIndex: 1 },
+  { text: "負責拿滅火器進行初期滅火的是哪一班？", options: ["滅火班", "通報班", "引導班"], correctIndex: 0 },
+  { text: "負責操作消防設備協助滅火的是哪一班？", options: ["引導班", "滅火班", "通報班"], correctIndex: 1 },
+  { text: "疏散時，負責帶領大家往安全出口移動的是哪一班？", options: ["通報班", "引導班", "滅火班"], correctIndex: 1 },
+  { text: "負責協助人員避開火源與濃煙的是哪一班？", options: ["滅火班", "通報班", "引導班"], correctIndex: 2 },
+  { text: "若有人不知道集合地點在哪裡，應由哪一班協助引導？", options: ["引導班", "滅火班", "通報班"], correctIndex: 0 },
+  { text: "火災發生時，負責把火災位置、狀況回報給消防單位的是哪一班？", options: ["滅火班", "通報班", "引導班"], correctIndex: 1 },
+  { text: "看到小火源且環境安全時，哪一班可以進行初期滅火？", options: ["引導班", "通報班", "滅火班"], correctIndex: 2 },
+  { text: "負責確認人員疏散方向，協助大家到安全集合地點的是哪一班？", options: ["通報班", "引導班", "滅火班"], correctIndex: 1 },
+];
+
+function loadFireDrill() {
+  if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;
+  questions = FIRE_DRILL_QUESTIONS.map(q => ({ ...q }));
+  renderQuestions();
+  toast('🚒 已載入 10 題防火演練！記得按儲存');
+}
 
 function loadPreset() {
   if (questions.length && !confirm('現有題目會被取代，確定嗎？')) return;

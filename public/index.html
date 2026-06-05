@@ -64,6 +64,8 @@ input[type="text"]:focus { border-color: #e056fd; }
   text-align: center;
 }
 .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.options-grid.three-opts #opt-2 { grid-column: 1 / -1; }
+.options-grid.three-opts #opt-3 { display: none; }
 .opt-btn {
   padding: 18px 10px; border-radius: 12px; border: none;
   font-size: 0.95rem; font-weight: 700; color: #fff;
@@ -285,9 +287,11 @@ socket.on('player_sync', ({ phase, question }) => {
     document.getElementById('q-text').textContent = question.text;
     document.getElementById('answered-msg').style.display = 'none';
     document.getElementById('ans-progress').textContent = '';
+    const syncGrid = document.querySelector('.options-grid');
+    syncGrid.classList.toggle('three-opts', question.options.length < 4);
     ['A','B','C','D'].forEach((lbl, i) => {
       const b = document.getElementById(`opt-${i}`);
-      b.textContent = `${lbl}. ${question.options[i]}`;
+      b.textContent = i < question.options.length ? `${lbl}. ${question.options[i]}` : '';
       b.classList.remove('disabled','correct','wrong');
     });
     const end = question.startTime + question.duration * 1000;
@@ -342,11 +346,16 @@ socket.on('question_start', data => {
   document.getElementById('ans-progress').textContent = '';
 
   const labels = ['A', 'B', 'C', 'D'];
+  const optsGrid = document.querySelector('.options-grid');
+  optsGrid.classList.toggle('three-opts', data.options.length < 4);
   data.options.forEach((opt, i) => {
     const b = document.getElementById(`opt-${i}`);
     b.textContent = `${labels[i]}. ${opt}`;
     b.classList.remove('disabled', 'correct', 'wrong');
   });
+  if (data.options.length < 4) {
+    document.getElementById('opt-3').textContent = '';
+  }
 
   if (timerInterval) clearInterval(timerInterval);
   const end = data.startTime + data.duration * 1000;

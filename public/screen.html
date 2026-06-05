@@ -53,6 +53,8 @@ body.show-gameover {
   margin-bottom: 32px;
 }
 .opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.opts-grid.three-opts #sc-opt-2 { grid-column: 1 / -1; }
+.opts-grid.three-opts #sc-opt-3 { display: none; }
 .opt-block {
   padding: 26px 28px; border-radius: 18px;
   font-size: 1.8rem; font-weight: 600;
@@ -380,10 +382,15 @@ socket.on('question_start', data => {
   document.getElementById('sc-q-badge').textContent = `第 ${data.index+1} 題 ／ 共 ${data.total} 題`;
   document.getElementById('sc-q-text').textContent = data.text;
   document.getElementById('sc-ans-prog').textContent = '';
+  const optsGrid = document.querySelector('.opts-grid');
+  optsGrid.classList.toggle('three-opts', data.options.length < 4);
   data.options.forEach((opt, i) => {
     document.getElementById(`sc-txt-${i}`).textContent = opt;
     document.getElementById(`sc-opt-${i}`).classList.remove('dim','highlight');
   });
+  if (data.options.length < 4) {
+    document.getElementById('sc-txt-3').textContent = '';
+  }
 
   if (timerInterval) clearInterval(timerInterval);
   const end = data.startTime + data.duration * 1000;
